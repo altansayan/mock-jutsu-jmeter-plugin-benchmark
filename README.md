@@ -1,0 +1,134 @@
+# mock-jutsu JMeter Test Plans
+
+Independent load test plans for the [mock-jutsu-jmeter](https://github.com/altansayan/mock-jutsu-jmeter) plugin.
+
+This repository exists for **transparency**: anyone can download these test plans, run them against their own JMeter installation, and independently verify the performance and correctness claims made in the plugin documentation.
+
+---
+
+## Test Plans
+
+### `AllTypes-Wave.jmx` — 423-Type Concurrent Wave
+
+Runs every type and qualifier combination the plugin supports under concurrent wave load.
+
+| Group | Threads | Pattern | Samplers |
+|-------|---------|---------|----------|
+| Fast Types | 1 000 | SyncTimer(1000) — all 1 000 threads fire simultaneously | 397 |
+| Heavy Types | 100 | SyncTimer(100) — cryptographic / high-computation types | 26 |
+
+Each thread group runs **one complete pass** (loops = 1) through all its samplers and exits. The test ends when the last thread finishes — no fixed time limit.
+
+**Heavy types** (separate group, 100 threads): `oidc_token_set`, `jwks`, `oidc_token`, `eth_wallet`, `btc_wallet`, `sol_wallet`, `mnemonic`, `x509_cert`, `webauthn_credential`, `fido2_assertion`, `mt940`, `camt053`, `ubl_invoice`, `swift_mt103`, `pain001`, `fhir_patient`, `hl7_message`, `jwt_attack`, `asn1_fuzz`, `ai_embedding`, `ai_vector`
+
+---
+
+## Prerequisites
+
+| Requirement | Version |
+|-------------|---------|
+| Apache JMeter | 5.6.x |
+| Java | 17, 21, or 25 |
+| mock-jutsu-jmeter JAR | 1.1.0+ |
+
+---
+
+## Setup
+
+**1. Install the plugin JAR**
+
+Download `mock-jutsu-jmeter-1.1.0.jar` from the [releases page](https://github.com/altansayan/mock-jutsu-jmeter/releases) and copy it to:
+
+```
+$JMETER_HOME/lib/ext/mock-jutsu-jmeter-1.1.0.jar
+```
+
+**2. Open the test plan**
+
+```
+File → Open → test-plans/AllTypes-Wave.jmx
+```
+
+**3. Run**
+
+```
+Run → Start  (or Ctrl+R)
+```
+
+The test runs to completion automatically. Results are written to:
+
+| File | Listener |
+|------|----------|
+| `results.jtl` | View Results Tree |
+| `results2.jtl` | View Results in Table |
+| `results3.jtl` | Response Time Graph |
+
+Files are created in the directory where JMeter is run from.
+
+---
+
+## Reading the Results
+
+### The Response Time Graph is misleading
+
+The **elapsed** time shown in the graph (~3 000–4 000 ms) includes the SyncTimer wait — the time each thread spent waiting at the wave barrier for all other threads to arrive. This is not the function execution time.
+
+```
+elapsed = SyncTimer wait (~3 300 ms) + actual generation (0.03–12 ms)
+```
+
+### Where to find real generation times
+
+The JTL `Latency` column stores the actual `System.nanoTime()` measurement divided by 1 000 (microseconds). To read it:
+
+**JMeter GUI:** View Results Tree → select any sample → Response Data tab shows `result [Xns]`
+
+**Command line analysis (Python):**
+
+```python
+import csv, collections, statistics
+
+data = collections.defaultdict(list)
+with open("results.jtl", newline="") as f:
+    for row in csv.DictReader(f):
+        lat = int(row.get("Latency", 0))
+        if lat > 0 and row["label"] != "Warmup compile":
+            data[row["label"]].append(lat)
+
+for label, vals in sorted(data.items(), key=lambda x: -statistics.mean(x[1])):
+    avg = statistics.mean(vals)
+    p95 = sorted(vals)[int(len(vals) * 0.95)]
+    print(f"{label:<40} avg={avg:.0f} µs  ({avg/1000:.3f} ms)  p95={p95} µs")
+```
+
+### Baseline results (v1.1.0, Java 25, Windows 10, 1 000 concurrent threads)
+
+| Type | Avg | p95 |
+|------|-----|-----|
+| cardnum:visa | 155 µs | 253 µs |
+| sepa_qr | 108 µs | 138 µs |
+| tckn | 41 µs | 71 µs |
+| oidc_token_set | 12 063 µs | 35 115 µs |
+
+All fast types complete well under **1.5 ms/call** — the CI regression threshold enforced by `PerfMeasurement.java`.
+
+---
+
+## Why BeanShell instead of Groovy?
+
+The samplers use BeanShell (`scriptLanguage=beanshell`) instead of the recommended JSR223/Groovy.
+
+**Reason:** Groovy 3.0.20 (bundled with JMeter 5.6.3) uses ASM to inspect Java class files. Java 25 produces class files at version 69, which Groovy's ASM version cannot read. Attempting `System.nanoTime()` inside a Groovy script causes:
+
+```
+Unsupported class file major version 69
+```
+
+BeanShell uses JVM reflection directly and has no ASM dependency, so it works correctly on Java 25. This is a JMeter 5.6.x + Java 25 compatibility issue, not a plugin limitation. Groovy scripts work normally on Java 17 and 21.
+
+---
+
+## Related
+
+- [mock-jutsu-jmeter](https://github.com/altansayan/mock-jutsu-jmeter) — the plugin itself
+- [mockjutsu](https://pypi.org/project/mockjutsu/) — Python package (PyPI)
