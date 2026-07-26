@@ -13,6 +13,7 @@ import collections
 import csv
 import statistics
 import sys
+from datetime import datetime
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -81,7 +82,7 @@ HTML = r"""<!DOCTYPE html>
 :root[data-theme=dark]{--bg:#0E1219;--surface:#161B27;--surface2:#1E2535;--border:#252D3E;--text:#C9D1E0;--muted:#5A6A8A;--accent:#4A9EFF;--fast:#2ECC8A;--medium:#F0A830;--slow:#E05555;--bar-bg:#1E2535;--badge-bg:#1E2535;--header-bg:#111620;--search-bg:#1A2030;--search-border:#2E3850;--th-bg:#131824}
 :root[data-theme=light]{--bg:#F0F4FA;--surface:#FFF;--surface2:#F5F8FF;--border:#DDE3EF;--text:#1A2235;--muted:#7A8AAA;--accent:#2563EB;--fast:#16A067;--medium:#C47A10;--slow:#C03030;--bar-bg:#EEF2FA;--badge-bg:#EEF2FA;--header-bg:#FFF;--search-bg:#FFF;--search-border:#C8D3E8;--th-bg:#F5F8FF}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.5;min-height:100vh;overflow-x:auto}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.5;min-height:100vh}
 .header{background:var(--header-bg);border-bottom:1px solid var(--border);padding:18px 24px 14px;position:sticky;top:0;z-index:10}
 .header-top{display:flex;align-items:baseline;gap:14px;margin-bottom:12px;flex-wrap:wrap}
 .title{font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.01em}
@@ -101,7 +102,7 @@ input[type=search]::placeholder{color:var(--muted)}
 .filter-btn:hover{border-color:var(--accent);color:var(--accent)}
 .filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
 .count-label{font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:auto}
-.table-wrap{padding:0 24px 24px}
+.table-wrap{overflow-x:clip;padding:0 24px 24px}
 table{width:100%;border-collapse:collapse;table-layout:fixed}
 col.col-n{width:44px}col.col-type{width:auto}col.col-avg{width:180px}col.col-p50{width:90px}col.col-p95{width:90px}col.col-count{width:80px}
 thead th{background:var(--th-bg);border-bottom:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:10px;font-weight:600;letter-spacing:.06em;padding:8px 10px;text-align:left;text-transform:uppercase;user-select:none;white-space:nowrap;position:sticky;top:var(--header-h,0px)}
@@ -280,7 +281,8 @@ def main() -> None:
         return
 
     html = generate_html(results, jtl_path.name)
-    out_path = Path(args.out) if args.out else jtl_path.with_name(jtl_path.stem + "-report.html")
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_path = Path(args.out) if args.out else jtl_path.with_name(f"{jtl_path.stem}-report-{stamp}.html")
     out_path.write_text(html, encoding="utf-8")
     print(f"Report written to: {out_path}  ({len(results)} types)")
 
