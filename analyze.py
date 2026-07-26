@@ -104,7 +104,7 @@ input[type=search]::placeholder{color:var(--muted)}
 .table-wrap{overflow-x:auto;padding:0 24px 24px}
 table{width:100%;border-collapse:collapse;table-layout:fixed}
 col.col-n{width:44px}col.col-type{width:auto}col.col-avg{width:180px}col.col-p50{width:90px}col.col-p95{width:90px}col.col-count{width:80px}
-thead th{background:var(--th-bg);border-bottom:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:10px;font-weight:600;letter-spacing:.06em;padding:8px 10px;text-align:left;text-transform:uppercase;user-select:none;white-space:nowrap;position:sticky;top:97px}
+thead th{background:var(--th-bg);border-bottom:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:10px;font-weight:600;letter-spacing:.06em;padding:8px 10px;text-align:left;text-transform:uppercase;user-select:none;white-space:nowrap;position:sticky;top:var(--header-h,0px)}
 thead th:hover{color:var(--text)}thead th.sorted{color:var(--accent)}
 thead th .sa{margin-left:3px;opacity:.5}thead th.sorted .sa{opacity:1}
 tbody tr{border-bottom:1px solid var(--border);transition:background .08s}
@@ -169,6 +169,12 @@ td.col-count{font-family:var(--mono);font-size:11px;font-variant-numeric:tabular
   </table>
 </div>
 <script>
+function setHeaderOffset(){
+  const h=document.querySelector('.header');
+  if(h) document.documentElement.style.setProperty('--header-h', h.getBoundingClientRect().height+'px');
+}
+setHeaderOffset();
+window.addEventListener('resize', setHeaderOffset);
 const RAW=__DATA__;
 const BAR_MAX=0.20;
 function tier(a){return a<0.05?'fast':a<0.15?'medium':'slow'}
