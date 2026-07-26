@@ -129,6 +129,7 @@ td.col-count{font-family:var(--mono);font-size:11px;font-variant-numeric:tabular
     <div class="title">mock-jutsu <span>Performance Report</span></div>
     <div class="badges">
       <div class="badge"><b id="stat-total">—</b> types</div>
+      __EXTRA_BADGES__
       <div class="badge fast">fastest avg <b id="stat-fastest">—</b></div>
       <div class="badge slow">slowest avg <b id="stat-slowest">—</b></div>
     </div>
@@ -245,15 +246,25 @@ render();
 """
 
 
-def generate_html(results: list[dict], jtl_name: str) -> str:
+def generate_html(results: list[dict], jtl_name: str,
+                  threads: str = "", meta: str = "") -> str:
     rows = []
     for r in results:
         t = r["type"].replace("\\", "\\\\").replace('"', '\\"')
         rows.append(f'["{t}",{r["avg"]:.3f},{r["p50"]:.3f},{r["p95"]:.3f},{r["count"]}]')
     js_data = "[\n" + ",\n".join(rows) + "\n]"
-    return HTML.replace("__DATA__", js_data).replace(
-        "Performance Report", f"Performance Report — {jtl_name}"
-    )
+
+    extra_badges = ""
+    if threads:
+        fmt = f"{int(threads):,}".replace(",", " ")
+        extra_badges += f'<div class="badge"><b>{fmt}</b> threads</div>'
+    if meta:
+        extra_badges += f'<div class="badge"><b>{meta}</b></div>'
+
+    html = HTML.replace("__DATA__", js_data)
+    html = html.replace("Performance Report", f"Performance Report — {jtl_name}")
+    html = html.replace("__EXTRA_BADGES__", extra_badges)
+    return html
 
 
 # ---------------------------------------------------------------------------
@@ -265,8 +276,10 @@ def main() -> None:
         description="Analyze mock-jutsu-jmeter JTL and generate HTML report."
     )
     parser.add_argument("jtl", help="Path to JTL file (e.g. viewResultsTree.jtl)")
-    parser.add_argument("--out", help="Output HTML file (default: <jtl-stem>-report.html)")
+    parser.add_argument("--out", help="Output HTML file (default: <jtl-stem>-report-<timestamp>.html)")
     parser.add_argument("--csv", action="store_true", help="Print CSV to stdout instead of HTML")
+    parser.add_argument("--threads", help="Thread count shown in report (e.g. 1000)")
+    parser.add_argument("--meta", help="Extra badge text (e.g. 'v1.1.0 · Java 25 · Win 10')")
     args = parser.parse_args()
 
     jtl_path = Path(args.jtl)
@@ -280,7 +293,9 @@ def main() -> None:
         print_csv(results)
         return
 
-    html = generate_html(results, jtl_path.name)
+    html = generate_html(results, jtl_path.name,
+                        threads=args.threads or "",
+                        meta=args.meta or "")
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_path = Path(args.out) if args.out else jtl_path.with_name(f"{jtl_path.stem}-report-{stamp}.html")
     out_path.write_text(html, encoding="utf-8")
