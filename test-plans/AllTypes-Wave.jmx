@@ -41,9 +41,9 @@ SampleResult.setSuccessful(true);</stringProp>
         </JSR223Sampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Fast Types — 1000 Wave" enabled="true">
-        <intProp name="ThreadGroup.num_threads">1000</intProp>
-        <intProp name="ThreadGroup.ramp_time">10</intProp>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Fast Types — 2000 Wave" enabled="true">
+        <intProp name="ThreadGroup.num_threads">2000</intProp>
+        <intProp name="ThreadGroup.ramp_time">15</intProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">false</boolProp>
         <boolProp name="ThreadGroup.scheduler">false</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
@@ -53,9 +53,9 @@ SampleResult.setSuccessful(true);</stringProp>
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <SyncTimer guiclass="TestBeanGUI" testclass="SyncTimer" testname="Wave Barrier 1000" enabled="true">
-          <intProp name="groupSize">1000</intProp>
-          <longProp name="timeoutInMs">60000</longProp>
+        <SyncTimer guiclass="TestBeanGUI" testclass="SyncTimer" testname="Wave Barrier 2000" enabled="true">
+          <intProp name="groupSize">2000</intProp>
+          <longProp name="timeoutInMs">120000</longProp>
         </SyncTimer>
         <hashTree/>
         <!-- ── Financial ─────────────────────────────── -->
