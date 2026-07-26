@@ -89,7 +89,24 @@ The JTL `Latency` column stores the actual `System.nanoTime()` measurement divid
 
 **JMeter GUI:** View Results Tree → select any sample → Response Data tab shows `result [Xns]`
 
-**Command line analysis (Python):**
+**HTML report (recommended):**
+
+Use the included `analyze.py` script to generate an interactive report with avg, p50, and p95 for every type:
+
+```bash
+python analyze.py viewResultsTree.jtl
+# → writes viewResultsTree-report.html
+
+python analyze.py viewResultsTree.jtl --out my-report.html
+# → custom output path
+
+python analyze.py viewResultsTree.jtl --csv
+# → prints CSV to stdout
+```
+
+Open the generated `.html` file in any browser — no server needed. The report is fully self-contained and supports search, sort, and tier filtering (Fast / Medium / Slow).
+
+**Quick command line analysis (Python):**
 
 ```python
 import csv, collections, statistics
@@ -102,9 +119,10 @@ with open("viewResultsTree.jtl", newline="") as f:
             data[row["label"]].append(lat)
 
 for label, vals in sorted(data.items(), key=lambda x: -statistics.mean(x[1])):
-    avg = statistics.mean(vals)
-    p95 = sorted(vals)[int(len(vals) * 0.95)]
-    print(f"{label:<40} avg={avg:.0f} µs  ({avg/1000:.3f} ms)  p95={p95} µs")
+    avg  = statistics.mean(vals)
+    p50  = sorted(vals)[int(len(vals) * 0.50)]
+    p95  = sorted(vals)[int(len(vals) * 0.95)]
+    print(f"{label:<40} avg={avg/1000:.3f}ms  p50={p50/1000:.3f}ms  p95={p95/1000:.3f}ms")
 ```
 
 ### Baseline results (v1.1.0, Java 25, Windows 10, 1 000 concurrent threads)
