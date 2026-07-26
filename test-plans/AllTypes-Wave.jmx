@@ -22,7 +22,12 @@
           <stringProp name="cacheKey">true</stringProp>
           <stringProp name="filename"></stringProp>
           <stringProp name="parameters"></stringProp>
-          <stringProp name="script">import com.mockjutsu.jmeter.functions.MockJutsuFinancialFunction;
+          <stringProp name="script">// JVM JIT warm-up: runs 500 iterations before the wave starts so the
+// JIT compiler promotes hot paths to native code, SecureRandom pools
+// are filled, and regex Pattern cache is primed. Without this, the
+// first ~200 wave samples show 3-10x inflated latency due to
+// interpretation overhead, which skews p95/p99 measurements.
+import com.mockjutsu.jmeter.functions.MockJutsuFinancialFunction;
 import org.apache.jmeter.engine.util.CompoundVariable;
 
 MockJutsuFinancialFunction fn = new MockJutsuFinancialFunction();
