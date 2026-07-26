@@ -95,7 +95,10 @@ Use the included `analyze.py` script to generate an interactive report with avg,
 
 ```bash
 python analyze.py viewResultsTree.jtl
-# → writes viewResultsTree-report.html
+# → writes viewResultsTree-report-<timestamp>.html
+
+python analyze.py viewResultsTree.jtl --threads 1000 --meta "v1.1.0 · Java 25 · Win 10"
+# → adds thread count and environment badges to the report header
 
 python analyze.py viewResultsTree.jtl --out my-report.html
 # → custom output path
@@ -103,6 +106,15 @@ python analyze.py viewResultsTree.jtl --out my-report.html
 python analyze.py viewResultsTree.jtl --csv
 # → prints CSV to stdout
 ```
+
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--threads` | Thread count shown as a badge | `--threads 1000` |
+| `--meta` | Free-text environment badge | `--meta "v1.1.0 · Java 25 · Win 10"` |
+| `--out` | Custom output path | `--out report.html` |
+| `--csv` | Print CSV to stdout instead of HTML | |
+
+Each run creates a new timestamped file — previous reports are never overwritten.
 
 Open the generated `.html` file in any browser — no server needed. The report is fully self-contained and supports search, sort, and tier filtering (Fast / Medium / Slow).
 
