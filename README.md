@@ -1,5 +1,11 @@
 # mock-jutsu JMeter Test Plans
 
+[![JMeter](https://img.shields.io/badge/JMeter-5.6.x-D22128?logo=apachejmeter&logoColor=white)](https://jmeter.apache.org/)
+[![Java](https://img.shields.io/badge/Java-17%20%7C%2021%20%7C%2025-007396?logo=openjdk&logoColor=white)](https://adoptium.net/)
+[![Plugin](https://img.shields.io/badge/mock--jutsu--jmeter-1.1.0-blue)](https://github.com/altansayan/mock-jutsu-jmeter/releases)
+[![Types](https://img.shields.io/badge/types%20tested-423-success)](test-plans/AllTypes-Wave.jmx)
+[![License](https://img.shields.io/badge/License-MIT-green)](https://github.com/altansayan/mock-jutsu-jmeter/blob/main/LICENSE)
+
 Independent load test plans for the [mock-jutsu-jmeter](https://github.com/altansayan/mock-jutsu-jmeter) plugin.
 
 This repository exists for **transparency**: anyone can download these test plans, run them against their own JMeter installation, and independently verify the performance and correctness claims made in the plugin documentation.
