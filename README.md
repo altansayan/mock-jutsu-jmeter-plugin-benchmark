@@ -65,9 +65,9 @@ The test runs to completion automatically. Results are written to:
 
 | File | Listener |
 |------|----------|
-| `results.jtl` | View Results Tree |
-| `results2.jtl` | View Results in Table |
-| `results3.jtl` | Response Time Graph |
+| `viewResultsTree.jtl` | View Results Tree |
+| `viewResultsInTable.jtl` | View Results in Table |
+| `responseTimeGraph.jtl` | Response Time Graph |
 
 Files are created in the directory where JMeter is run from.
 
@@ -95,7 +95,7 @@ The JTL `Latency` column stores the actual `System.nanoTime()` measurement divid
 import csv, collections, statistics
 
 data = collections.defaultdict(list)
-with open("results.jtl", newline="") as f:
+with open("viewResultsTree.jtl", newline="") as f:
     for row in csv.DictReader(f):
         lat = int(row.get("Latency", 0))
         if lat > 0 and row["label"] != "Warmup compile":

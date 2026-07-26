@@ -9461,7 +9461,7 @@ SampleResult.setLatency(ns / 1000L);</stringProp>
             <connectTime>true</connectTime>
           </value>
         </objProp>
-        <stringProp name="filename">results.jtl</stringProp>
+        <stringProp name="filename">viewResultsTree.jtl</stringProp>
       </ResultCollector>
       <hashTree/>
       <ResultCollector guiclass="TableVisualizer" testclass="ResultCollector" testname="View Results in Table" enabled="true">
@@ -9498,7 +9498,7 @@ SampleResult.setLatency(ns / 1000L);</stringProp>
             <connectTime>true</connectTime>
           </value>
         </objProp>
-        <stringProp name="filename">results2.jtl</stringProp>
+        <stringProp name="filename">viewResultsInTable.jtl</stringProp>
       </ResultCollector>
       <hashTree/>
       <ResultCollector guiclass="RespTimeGraphVisualizer" testclass="ResultCollector" testname="Response Time Graph" enabled="true">
@@ -9535,7 +9535,7 @@ SampleResult.setLatency(ns / 1000L);</stringProp>
             <connectTime>true</connectTime>
           </value>
         </objProp>
-        <stringProp name="filename">results3.jtl</stringProp>
+        <stringProp name="filename">responseTimeGraph.jtl</stringProp>
       </ResultCollector>
       <hashTree/>
     </hashTree>
