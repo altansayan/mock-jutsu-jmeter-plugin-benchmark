@@ -20,7 +20,7 @@ This repository exists for **transparency**: anyone can download these test plan
 6. Which types can be used per-request, and which should be pre-generated via CSV?
 
 ---
-[AllTypes-Burnin.jmx](https://github.com/altansayan/mock-jutsu-jmeter-plugin-benchmark/blob/main/test-plans/AllTypes-Burnin.jmx) — What Does It Answer? Ayrıca Detalı AllTypes-Wave Test Sonuçları İçin: Buring Detaylı Rapor 
+[AllTypes-Burnin.jmx](https://github.com/altansayan/mock-jutsu-jmeter-plugin-benchmark/blob/main/test-plans/AllTypes-Burnin.jmx) — What Does It Answer? Ayrıca Detalı AllTypes-Burnin Test Sonuçları İçin: Buring Detaylı Rapor 
 
 1. Does performance degrade after 20 minutes of continuous load?
 2. Are there memory leaks? (does RAM grow over time without releasing?)
