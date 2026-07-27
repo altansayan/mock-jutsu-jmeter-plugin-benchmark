@@ -1,4 +1,4 @@
-# Mock Justu Jmeter Plugin Benchmark - JMeter Test Plans
+# Mock Jutsu JMeter Plugin Benchmark - JMeter Test Plans
 
 [![JMeter](https://img.shields.io/badge/JMeter-5.6.x-D22128?logo=apachejmeter&logoColor=white)](https://jmeter.apache.org/)
 [![Java](https://img.shields.io/badge/Java-17%20%7C%2021%20%7C%2025-007396?logo=openjdk&logoColor=white)](https://adoptium.net/)
@@ -16,7 +16,7 @@ This repository exists for **transparency**: anyone can download these test plan
 2. What happens to performance under 1000 simultaneous calls? (true concurrent load)
 3. Are there lazy-init spikes? (does the first call show inflated times?)
 4. Does warmup help? (does the setUp warmup eliminate lazy-init spikes?)
-5. What is the gap between Fast and Heavy types? (0.05ms vs 12ms)
+5. What is the gap between Fast and Heavy types? (0.028 ms vs 0.898 ms)
 6. Which types can be used per-request, and which should be pre-generated via CSV?
 
 ---
@@ -49,18 +49,40 @@ Two test dimensions cover the plugin's production fitness:
 
 ## Test Plans
 
-### `AllTypes-Wave.jmx` - 397 - Type Concurrent Wave
+### `AllTypes-Wave.jmx` — 423 Types, Peak Latency Measurement
 
-Runs every type and qualifier combination the plugin supports under concurrent wave load.
+Runs all 423 type/qualifier combinations under simultaneous peak load using a **per-sampler SyncTimer** pattern.
 
 | Group | Threads | Pattern | Samplers |
 |-------|---------|---------|----------|
-| Fast Types | 1 000 | SyncTimer(1000) — all 1 000 threads fire simultaneously | 397 |
-| Heavy Types | 100 | SyncTimer(100) — cryptographic / high-computation types | 26 |
+| All Types | 1 000 | SyncTimer(1000) per sampler — all 1 000 threads fire simultaneously for each type | 423 |
 
-Each thread group runs **one complete pass** (loops = 1) through all its samplers and exits. The test ends when the last thread finishes — no fixed time limit.
+Each sampler has its own SyncTimer barrier. All 1 000 threads must arrive before the sampler fires — this guarantees true concurrent peak load for every single type. The test completes one pass (loops = 1) through all 423 samplers and exits.
 
-**Heavy types** (separate group, 100 threads): `oidc_token_set`, `jwks`, `oidc_token`, `eth_wallet`, `btc_wallet`, `sol_wallet`, `mnemonic`, `x509_cert`, `webauthn_credential`, `fido2_assertion`, `mt940`, `camt053`, `ubl_invoice`, `swift_mt103`, `pain001`, `fhir_patient`, `hl7_message`, `jwt_attack`, `asn1_fuzz`, `ai_embedding`, `ai_vector`
+**setUp Thread Group** runs first (1 thread, 1 loop) to warm up JVM class loading and static init blocks before measurement begins.
+
+**Tier classification (measured results):**
+
+| Tier | Avg latency | Types | Examples |
+|------|------------|-------|---------|
+| Fast | < 0.05 ms | 347 | `tckn`, `iban`, `cardnum`, `email`, `age` |
+| Medium | 0.05–0.15 ms | 71 | `btc_wallet`, `camt053`, `x509_cert`, `eth_wallet` |
+| Slow | > 0.15 ms | 5 | `oidc_token_set` (0.898 ms), `ai_embedding` (0.872 ms), `jwks` (0.318 ms), `ai_vector` (0.214 ms), `prometheus_metrics` (0.121 ms) |
+
+---
+
+### `AllTypes-Burnin.jmx` — 417 Types, Stability & Durability
+
+Runs sustained load for 1 200 seconds (20 minutes) with no SyncTimer — continuous throughput mode.
+
+| Group | Threads | Duration | Focus |
+|-------|---------|----------|-------|
+| Fast Types | 1 000 | 1 200 s | Throughput stability, memory behavior |
+| Heavy Types | 200 | 1 200 s | Long-running durability of slow types |
+
+Both thread groups write to the same JTL file. The shift from Fast (1 000T) to Heavy (200T) in the second half produces a natural TPS drop and p95 rise — this is expected test design behavior, not performance degradation.
+
+**Results: 691 239 samples, 42 minutes, RAM −2.2 pp, zero thread errors.**
 
 ---
 
@@ -84,10 +106,11 @@ Download `mock-jutsu-jmeter-1.1.0.jar` from the [releases page](https://github.c
 $JMETER_HOME/lib/ext/mock-jutsu-jmeter-1.1.0.jar
 ```
 
-**2. Open the test plan**
+**2. Open a test plan**
 
 ```
 File → Open → test-plans/AllTypes-Wave.jmx
+File → Open → test-plans/AllTypes-Burnin.jmx
 ```
 
 **3. Run**
@@ -96,83 +119,108 @@ File → Open → test-plans/AllTypes-Wave.jmx
 Run → Start  (or Ctrl+R)
 ```
 
-The test runs to completion automatically. Results are written to:
+The test runs to completion automatically. Results are written to the directory where JMeter is run from.
 
-| File | Listener |
-|------|----------|
-| `viewResultsTree.jtl` | View Results Tree |
-| `viewResultsInTable.jtl` | View Results in Table |
-| `responseTimeGraph.jtl` | Response Time Graph |
+---
 
-Files are created in the directory where JMeter is run from.
+## System Monitoring (Optional)
+
+Use `monitor.ps1` to capture CPU, RAM, and disk write metrics during a test run. Start it before running JMeter, stop it with `Ctrl+C` when the test finishes.
+
+```powershell
+# Default: writes monitor_out.csv every 5 seconds
+.\monitor.ps1
+
+# Custom interval and output file
+.\monitor.ps1 -OutFile my_monitor.csv -IntervalSec 10
+```
+
+The script uses `Get-CimInstance` (not `Get-Counter`) to avoid `c0000bb8` errors on Windows. It null-guards the disk counter for systems where physical disk performance counters are disabled.
+
+The resulting `monitor_out.csv` is consumed by `analyze_wave.py` and `analyze_burnin.py` to overlay CPU/RAM on the latency trend charts.
 
 ---
 
 ## Reading the Results
 
-### The Response Time Graph is misleading
+### Why elapsed time is misleading (Wave only)
 
-The **elapsed** time shown in the graph (~3 000–4 000 ms) includes the SyncTimer wait — the time each thread spent waiting at the wave barrier for all other threads to arrive. This is not the function execution time.
+The **elapsed** time shown in JMeter's Response Time Graph includes the SyncTimer wait — the time each thread spent waiting at the barrier for all 1 000 threads to arrive. This is not the function execution time.
 
 ```
-elapsed = SyncTimer wait (~3 300 ms) + actual generation (0.03–12 ms)
+elapsed = SyncTimer wait (~3 300 ms) + actual generation (0.028–0.898 ms)
 ```
 
 ### Where to find real generation times
 
-The JTL `Latency` column stores the actual `System.nanoTime()` measurement divided by 1 000 (microseconds). To read it:
+The JTL `Latency` column stores the actual `System.nanoTime()` delta divided by 1 000 (microseconds → converted to ms in reports).
 
 **JMeter GUI:** View Results Tree → select any sample → Response Data tab shows `result [Xns]`
 
-**HTML report (recommended):**
+**HTML reports (recommended):**
 
-Use the included `analyze.py` script to generate an interactive report with avg, p50, and p95 for every type:
+Use `analyze_wave.py` for Wave results and `analyze_burnin.py` for Burn-in results:
 
 ```bash
-python analyze.py viewResultsTree.jtl
-# → writes viewResultsTree-report-<timestamp>.html
+# Wave report — default JTL path, 10-second buckets
+python analyze_wave.py
 
-python analyze.py viewResultsTree.jtl --threads 1000 --meta "v1.1.0 · Java 25 · Win 10"
-# → adds thread count and environment badges to the report header
+# Wave report — custom JTL, custom output
+python analyze_wave.py path/to/wave.jtl --out reports/my-wave.html --threads 1000 --meta "v1.1.0 · Java 25 · Win 10"
 
-python analyze.py viewResultsTree.jtl --out my-report.html
-# → custom output path
+# Burn-in report — default JTL path, 60-second buckets
+python analyze_burnin.py
 
-python analyze.py viewResultsTree.jtl --csv
-# → prints CSV to stdout
+# Burn-in report — custom JTL
+python analyze_burnin.py path/to/burnin.jtl --out reports/my-burnin.html
 ```
 
-| Flag | Description | Example |
+| Flag | Description | Default |
 |------|-------------|---------|
-| `--threads` | Thread count shown as a badge | `--threads 1000` |
-| `--meta` | Free-text environment badge | `--meta "v1.1.0 · Java 25 · Win 10"` |
-| `--out` | Custom output path | `--out report.html` |
-| `--csv` | Print CSV to stdout instead of HTML | |
+| `--out` | Output HTML path | `reports/wave-report.html` / `reports/burnin-report.html` |
+| `--monitor` | Path to `monitor_out.csv` | repo root `monitor_out.csv` |
+| `--threads` | Thread count badge | `1000` |
+| `--meta` | Free-text environment badge | JTL filename |
+| `--bucket` | Time bucket in seconds | `10` (wave) / `60` (burnin) |
 
-Each run creates a new timestamped file — previous reports are never overwritten.
+Reports open in any browser — no server needed. They are fully self-contained and support search, sort, and tier filtering (Fast / Medium / Slow), plus TPS trend, p95 drift, and CPU/RAM overlay charts.
 
-Open the generated `.html` file in any browser — no server needed. The report is fully self-contained and supports search, sort, and tier filtering (Fast / Medium / Slow).
-
-**Quick command line analysis (Python):**
+**Quick command-line analysis (Python):**
 
 ```python
 import csv, collections, statistics
 
+WARMUP = {"Warmup compile", "Lazy Init Warmup — Fast Types",
+           "Heavy Types Warmup", "ScriptWarmup"}
+
 data = collections.defaultdict(list)
-with open("viewResultsTree.jtl", newline="") as f:
+with open("wave.jtl", newline="") as f:
     for row in csv.DictReader(f):
         lat = int(row.get("Latency", 0))
-        if lat > 0 and row["label"] != "Warmup compile":
+        if lat > 0 and row["label"] not in WARMUP:
             data[row["label"]].append(lat)
 
 for label, vals in sorted(data.items(), key=lambda x: -statistics.mean(x[1])):
-    avg  = statistics.mean(vals)
-    p50  = sorted(vals)[int(len(vals) * 0.50)]
-    p95  = sorted(vals)[int(len(vals) * 0.95)]
+    avg = statistics.mean(vals)
+    p50 = sorted(vals)[int(len(vals) * 0.50)]
+    p95 = sorted(vals)[int(len(vals) * 0.95)]
     print(f"{label:<40} avg={avg/1000:.3f}ms  p50={p50/1000:.3f}ms  p95={p95/1000:.3f}ms")
 ```
 
-All fast types complete well under **1.5 ms/call** — the CI regression threshold enforced by `PerfMeasurement.java`.
+---
+
+## Pre-generating Slow Types via CSV
+
+4 types have avg latency above 0.15 ms and will add measurable overhead if generated per-request in a production load test. Pre-generate them once in a `setUp Thread Group` and read them via `CSV Data Set Config`:
+
+| Type | Avg latency | Overhead on 100 ms API |
+|------|------------|----------------------|
+| `oidc_token_set` | 0.898 ms | 0.9% |
+| `ai_embedding` | 0.872 ms | 0.87% |
+| `jwks` | 0.318 ms | 0.32% |
+| `ai_vector` | 0.214 ms | 0.21% |
+
+See the [QA Analysis Report](reports/qa-performance-analysis-en.html) for the full BeanShell setUp script and `CSV Data Set Config` settings.
 
 ---
 
