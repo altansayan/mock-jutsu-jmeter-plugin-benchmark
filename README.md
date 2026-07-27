@@ -14,7 +14,7 @@ This repository exists for **transparency**: anyone can download these test plan
 
 ## Test Plans
 
-### `AllTypes-Wave.jmx` — 423-Type Concurrent Wave
+### `AllTypes-Wave.jmx` - 397 - Type Concurrent Wave
 
 Runs every type and qualifier combination the plugin supports under concurrent wave load.
 
