@@ -137,15 +137,6 @@ for label, vals in sorted(data.items(), key=lambda x: -statistics.mean(x[1])):
     print(f"{label:<40} avg={avg/1000:.3f}ms  p50={p50/1000:.3f}ms  p95={p95/1000:.3f}ms")
 ```
 
-### Baseline results (v1.1.0, Java 25, Windows 10, 1 000 concurrent threads)
-
-| Type | Avg (ms) | p95 (ms) |
-|------|----------|----------|
-| cardnum:visa | 0.155 | 0.253 |
-| sepa_qr | 0.108 | 0.138 |
-| tckn | 0.041 | 0.071 |
-| oidc_token_set | 12.063 | 35.115 |
-
 All fast types complete well under **1.5 ms/call** — the CI regression threshold enforced by `PerfMeasurement.java`.
 
 ---
