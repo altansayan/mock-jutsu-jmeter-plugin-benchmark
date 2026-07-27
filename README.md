@@ -1,4 +1,4 @@
-# mock-jutsu JMeter Test Plans
+# Mock Justu Jmeter Plugin Benchmark - JMeter Test Plans
 
 [![JMeter](https://img.shields.io/badge/JMeter-5.6.x-D22128?logo=apachejmeter&logoColor=white)](https://jmeter.apache.org/)
 [![Java](https://img.shields.io/badge/Java-17%20%7C%2021%20%7C%2025-007396?logo=openjdk&logoColor=white)](https://adoptium.net/)
