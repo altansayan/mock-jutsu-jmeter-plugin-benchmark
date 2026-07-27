@@ -30,7 +30,7 @@ This repository exists for **transparency**: anyone can download these test plan
 6. Can it be safely used in production load tests? (the core question)
 
 ---
-## Summary
+## 📋 Summary
 
 Two test dimensions cover the plugin's production fitness:
 
@@ -47,7 +47,7 @@ Two test dimensions cover the plugin's production fitness:
 
 ---
 
-## Test Plans
+## 🧪 Test Plans
 
 ### `AllTypes-Wave.jmx` — 423 Types, Peak Latency Measurement
 
@@ -86,7 +86,7 @@ Both thread groups write to the same JTL file. The shift from Fast (1 000T) to H
 
 ---
 
-## Prerequisites
+## ✅ Prerequisites
 
 | Requirement | Version |
 |-------------|---------|
@@ -96,7 +96,7 @@ Both thread groups write to the same JTL file. The shift from Fast (1 000T) to H
 
 ---
 
-## Setup
+## ⚙️ Setup
 
 **1. Install the plugin JAR**
 
@@ -123,9 +123,9 @@ The test runs to completion automatically. Results are written to the directory 
 
 ---
 
-## System Monitoring (Optional)
+## 📡 System Monitoring (Optional)
 
-Use `monitor.ps1` to capture CPU, RAM, and disk write metrics during a test run. Start it before running JMeter, stop it with `Ctrl+C` when the test finishes.
+Use [`monitor.ps1`](https://github.com/altansayan/mock-jutsu-jmeter-plugin-benchmark/blob/main/monitor.ps1) to capture CPU, RAM, and disk write metrics during a test run. Start it before running JMeter, stop it with `Ctrl+C` when the test finishes.
 
 ```powershell
 # Default: writes monitor_out.csv every 5 seconds
@@ -141,7 +141,7 @@ The resulting `monitor_out.csv` is consumed by `analyze_wave.py` and `analyze_bu
 
 ---
 
-## Reading the Results
+## 📊 Reading the Results
 
 ### Why elapsed time is misleading (Wave only)
 
@@ -209,7 +209,7 @@ for label, vals in sorted(data.items(), key=lambda x: -statistics.mean(x[1])):
 
 ---
 
-## Pre-generating Slow Types via CSV
+## ⚡ Pre-generating Slow Types via CSV
 
 4 types have avg latency above 0.15 ms and will add measurable overhead if generated per-request in a production load test. Pre-generate them once in a `setUp Thread Group` and read them via `CSV Data Set Config`:
 
@@ -224,7 +224,7 @@ See the [QA Analysis Report](reports/qa-performance-analysis-en.html) for the fu
 
 ---
 
-## Why BeanShell instead of Groovy?
+## 🔩 Why BeanShell instead of Groovy?
 
 The samplers use BeanShell (`scriptLanguage=beanshell`) instead of the recommended JSR223/Groovy.
 
@@ -238,7 +238,7 @@ BeanShell uses JVM reflection directly and has no ASM dependency, so it works co
 
 ---
 
-## Related
+## 🔗 Related
 
 - [mock-jutsu-jmeter](https://github.com/altansayan/mock-jutsu-jmeter) — the plugin itself
 - [mockjutsu](https://pypi.org/project/mockjutsu/) — Python package (PyPI)
