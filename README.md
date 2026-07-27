@@ -30,9 +30,20 @@ This repository exists for **transparency**: anyone can download these test plan
 6. Can it be safely used in production load tests? (the core question)
 
 ---
-Summary:
-- Wave → "How fast?"
-- Burn-in → "How durable?"
+## Summary
+
+Two test dimensions cover the plugin's production fitness:
+
+| Test | Question | Verdict |
+|------|----------|---------|
+| Wave (449K samples, 1000 concurrent) | How fast is each type? | ✅ 98% of types <0.15 ms — negligible overhead |
+| Burn-in (691K samples, 42 min) | Does it hold up over time? | ✅ No memory leak, stable threads, GC healthy |
+
+**For teams running load tests:** 418 out of 423 types can be used per-request without affecting your response time measurements. The remaining 4 (OIDC, AI types) should be pre-generated via CSV — a one-time setUp step that reduces their overhead to ~0.01 ms.
+
+**For QA engineers:** Full latency tables (avg, p50, p95, p99), CPU/RAM profiles, and tier classification (Fast / Medium / Slow) are available in the detailed reports below.
+
+📄 [QA Performance Analysis — English](reports/qa-performance-analysis-en.html) &nbsp;|&nbsp; 📄 [QA Performans Analizi — Türkçe](reports/qa-performance-analysis-tr.html)
 
 ---
 
