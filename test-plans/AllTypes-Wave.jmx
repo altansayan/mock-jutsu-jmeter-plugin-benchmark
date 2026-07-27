@@ -40,6 +40,220 @@ SampleResult.setSuccessful(true);</stringProp>
           <stringProp name="scriptLanguage">beanshell</stringProp>
         </JSR223Sampler>
         <hashTree/>
+        <!-- ── Lazy Init Warmup ────────────────────────────────────────────────
+             Forces JCE provider init (HMAC-SHA256, AES-MAC), Pattern.compile,
+             lookup tables, and locale lists for every type that showed lazy-init
+             spikes in the 1000T/2000T wave tests. 5 iterations each ensures
+             JIT tier-1+ compilation before the main wave fires.
+        ─────────────────────────────────────────────────────────────────────── -->
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Lazy Init Warmup — Fast Types" enabled="true">
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="script">import com.mockjutsu.jmeter.functions.MockJutsuMetaFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuCryptoFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuIntlIdsFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuCommFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuCommerceFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuFinancialFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuRegexFunction;
+import org.apache.jmeter.engine.util.CompoundVariable;
+
+// signature / webhook_signature — HMAC-SHA256 / ECDSA JCE provider
+MockJutsuMetaFunction meta = new MockJutsuMetaFunction();
+java.util.List pm = new java.util.ArrayList();
+pm.add(new CompoundVariable(&quot;signature|TR&quot;));
+meta.setParameters(pm);
+for (int i = 0; i &lt; 5; i++) meta.execute(null, null);
+
+pm = new java.util.ArrayList();
+pm.add(new CompoundVariable(&quot;webhook_signature|TR&quot;));
+meta.setParameters(pm);
+for (int i = 0; i &lt; 5; i++) meta.execute(null, null);
+
+// liquidity_pool_id — Keccak-256 first-call init
+MockJutsuCryptoFunction crypto = new MockJutsuCryptoFunction();
+java.util.List pc = new java.util.ArrayList();
+pc.add(new CompoundVariable(&quot;liquidity_pool_id|TR&quot;));
+crypto.setParameters(pc);
+for (int i = 0; i &lt; 5; i++) crypto.execute(null, null);
+
+// cl_rut — modular arithmetic lookup table
+MockJutsuIntlIdsFunction intlids = new MockJutsuIntlIdsFunction();
+java.util.List pi = new java.util.ArrayList();
+pi.add(new CompoundVariable(&quot;cl_rut|TR&quot;));
+intlids.setParameters(pi);
+for (int i = 0; i &lt; 5; i++) intlids.execute(null, null);
+
+// phone — locale/format list
+MockJutsuCommFunction comm = new MockJutsuCommFunction();
+java.util.List pco = new java.util.ArrayList();
+pco.add(new CompoundVariable(&quot;phone|TR&quot;));
+comm.setParameters(pco);
+for (int i = 0; i &lt; 5; i++) comm.execute(null, null);
+
+// currency — locale/currency list
+MockJutsuCommerceFunction commerce = new MockJutsuCommerceFunction();
+java.util.List pcc = new java.util.ArrayList();
+pcc.add(new CompoundVariable(&quot;currency|TR&quot;));
+commerce.setParameters(pcc);
+for (int i = 0; i &lt; 5; i++) commerce.execute(null, null);
+
+// iban / 3ds_cavv — IBAN checksum table, AES-MAC JCE
+MockJutsuFinancialFunction fin = new MockJutsuFinancialFunction();
+java.util.List pf = new java.util.ArrayList();
+pf.add(new CompoundVariable(&quot;iban|TR&quot;));
+fin.setParameters(pf);
+for (int i = 0; i &lt; 5; i++) fin.execute(null, null);
+
+pf = new java.util.ArrayList();
+pf.add(new CompoundVariable(&quot;3ds_cavv|TR&quot;));
+fin.setParameters(pf);
+for (int i = 0; i &lt; 5; i++) fin.execute(null, null);
+
+// reverse_regex — Pattern.compile for each distinct pattern
+MockJutsuRegexFunction regex = new MockJutsuRegexFunction();
+java.util.List pr = new java.util.ArrayList();
+pr.add(new CompoundVariable(&quot;reverse_regex:[A-Z]{3}-\\d{4}|TR&quot;));
+regex.setParameters(pr);
+for (int i = 0; i &lt; 5; i++) regex.execute(null, null);
+
+pr = new java.util.ArrayList();
+pr.add(new CompoundVariable(&quot;reverse_regex:[a-z0-9]{8}|TR&quot;));
+regex.setParameters(pr);
+for (int i = 0; i &lt; 5; i++) regex.execute(null, null);
+
+SampleResult.setResponseData(&quot;lazy-init warmup done (10 types x 5 iters)&quot;, &quot;UTF-8&quot;);
+SampleResult.setSuccessful(true);</stringProp>
+          <stringProp name="scriptLanguage">beanshell</stringProp>
+        </JSR223Sampler>
+        <hashTree/>
+        <!-- ── Heavy Types Warmup ──────────────────────────────────────────────
+             Forces OIDC signing (ES256), EC key derivation (secp256k1/Ed25519),
+             X.509 DER chain, CBOR encoding, ASN.1, FHIR/HL7 templates,
+             BankStatement/Payments XML init. 3 iterations each: enough for JIT
+             tier-1, short enough not to delay the main wave significantly.
+        ─────────────────────────────────────────────────────────────────────── -->
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Heavy Types Warmup" enabled="true">
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="script">import com.mockjutsu.jmeter.functions.MockJutsuOidcFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuWalletFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuCryptoFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuSecurityFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuFido2Function;
+import com.mockjutsu.jmeter.functions.MockJutsuCryptoFuzzFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuHealthFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuAiFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuBankStatementFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuPaymentsFunction;
+import org.apache.jmeter.engine.util.CompoundVariable;
+
+// OIDC — ES256 signing, JWK set construction
+MockJutsuOidcFunction oidc = new MockJutsuOidcFunction();
+String[] oidcTypes = {&quot;oidc_token_set&quot;, &quot;jwks&quot;, &quot;oidc_token&quot;};
+for (int j = 0; j &lt; oidcTypes.length; j++) {
+    java.util.List p = new java.util.ArrayList();
+    p.add(new CompoundVariable(oidcTypes[j] + &quot;|TR&quot;));
+    oidc.setParameters(p);
+    for (int i = 0; i &lt; 3; i++) oidc.execute(null, null);
+}
+
+// Wallet — secp256k1 EC derivation, Keccak-256, Base58Check, Ed25519
+MockJutsuWalletFunction wallet = new MockJutsuWalletFunction();
+String[] walletTypes = {&quot;eth_wallet&quot;, &quot;btc_wallet&quot;, &quot;sol_wallet&quot;};
+for (int j = 0; j &lt; walletTypes.length; j++) {
+    java.util.List p = new java.util.ArrayList();
+    p.add(new CompoundVariable(walletTypes[j] + &quot;|TR&quot;));
+    wallet.setParameters(p);
+    for (int i = 0; i &lt; 3; i++) wallet.execute(null, null);
+}
+
+// mnemonic — BIP-39 wordlist, SHA-256 checksum
+MockJutsuCryptoFunction crypto = new MockJutsuCryptoFunction();
+java.util.List pm = new java.util.ArrayList();
+pm.add(new CompoundVariable(&quot;mnemonic:12|TR&quot;));
+crypto.setParameters(pm);
+for (int i = 0; i &lt; 3; i++) crypto.execute(null, null);
+
+pm = new java.util.ArrayList();
+pm.add(new CompoundVariable(&quot;mnemonic:24|TR&quot;));
+crypto.setParameters(pm);
+for (int i = 0; i &lt; 3; i++) crypto.execute(null, null);
+
+// x509_cert — RSA key gen, X.509 DER encoding
+MockJutsuSecurityFunction sec = new MockJutsuSecurityFunction();
+java.util.List ps = new java.util.ArrayList();
+ps.add(new CompoundVariable(&quot;x509_cert|TR&quot;));
+sec.setParameters(ps);
+for (int i = 0; i &lt; 3; i++) sec.execute(null, null);
+
+// WebAuthn / FIDO2 — P-256 ECDSA, CBOR encoding
+MockJutsuFido2Function fido2 = new MockJutsuFido2Function();
+String[] fido2Types = {&quot;webauthn_credential&quot;, &quot;fido2_assertion&quot;};
+for (int j = 0; j &lt; fido2Types.length; j++) {
+    java.util.List p = new java.util.ArrayList();
+    p.add(new CompoundVariable(fido2Types[j] + &quot;|TR&quot;));
+    fido2.setParameters(p);
+    for (int i = 0; i &lt; 3; i++) fido2.execute(null, null);
+}
+
+// CryptoFuzz — JWT alg confusion, ASN.1 DER builder
+MockJutsuCryptoFuzzFunction fuzz = new MockJutsuCryptoFuzzFunction();
+String[] fuzzTypes = {&quot;jwt_attack&quot;, &quot;asn1_fuzz&quot;};
+for (int j = 0; j &lt; fuzzTypes.length; j++) {
+    java.util.List p = new java.util.ArrayList();
+    p.add(new CompoundVariable(fuzzTypes[j] + &quot;|TR&quot;));
+    fuzz.setParameters(p);
+    for (int i = 0; i &lt; 3; i++) fuzz.execute(null, null);
+}
+
+// Health — FHIR JSON template, HL7 v2 segment builder
+MockJutsuHealthFunction health = new MockJutsuHealthFunction();
+String[] healthTypes = {&quot;fhir_patient&quot;, &quot;hl7_message&quot;};
+for (int j = 0; j &lt; healthTypes.length; j++) {
+    java.util.List p = new java.util.ArrayList();
+    p.add(new CompoundVariable(healthTypes[j] + &quot;|TR&quot;));
+    health.setParameters(p);
+    for (int i = 0; i &lt; 3; i++) health.execute(null, null);
+}
+
+// AI — float array allocation, embedding norm
+MockJutsuAiFunction ai = new MockJutsuAiFunction();
+String[] aiTypes = {&quot;ai_embedding&quot;, &quot;ai_vector&quot;};
+for (int j = 0; j &lt; aiTypes.length; j++) {
+    java.util.List p = new java.util.ArrayList();
+    p.add(new CompoundVariable(aiTypes[j] + &quot;|TR&quot;));
+    ai.setParameters(p);
+    for (int i = 0; i &lt; 3; i++) ai.execute(null, null);
+}
+
+// BankStatement — MT940 / CAMT.053 / UBL XML builders
+MockJutsuBankStatementFunction bs = new MockJutsuBankStatementFunction();
+String[] bsTypes = {&quot;mt940&quot;, &quot;camt053&quot;, &quot;ubl_invoice&quot;};
+for (int j = 0; j &lt; bsTypes.length; j++) {
+    java.util.List p = new java.util.ArrayList();
+    p.add(new CompoundVariable(bsTypes[j] + &quot;|TR&quot;));
+    bs.setParameters(p);
+    for (int i = 0; i &lt; 3; i++) bs.execute(null, null);
+}
+
+// Payments — SWIFT MT103 / pain.001 XML
+MockJutsuPaymentsFunction pay = new MockJutsuPaymentsFunction();
+String[] payTypes = {&quot;swift_mt103&quot;, &quot;pain001&quot;};
+for (int j = 0; j &lt; payTypes.length; j++) {
+    java.util.List p = new java.util.ArrayList();
+    p.add(new CompoundVariable(payTypes[j] + &quot;|TR&quot;));
+    pay.setParameters(p);
+    for (int i = 0; i &lt; 3; i++) pay.execute(null, null);
+}
+
+SampleResult.setResponseData(&quot;heavy types warmup done (22 types x 3 iters)&quot;, &quot;UTF-8&quot;);
+SampleResult.setSuccessful(true);</stringProp>
+          <stringProp name="scriptLanguage">beanshell</stringProp>
+        </JSR223Sampler>
+        <hashTree/>
       </hashTree>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Fast Types — 2000 Wave" enabled="true">
         <intProp name="ThreadGroup.num_threads">2000</intProp>
