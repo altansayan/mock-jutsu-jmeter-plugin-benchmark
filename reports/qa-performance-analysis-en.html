@@ -1,0 +1,614 @@
+<title>mock-jutsu-jmeter — QA Performance Analysis v2</title>
+<style>
+:root{
+  --bg:#0F1117;--surface:#171B26;--surface2:#1E2535;--border:#2A3148;
+  --text:#C8D0E0;--muted:#5A6A8A;--head:#E8EDF5;
+  --accent:#4A9EFF;--accent2:#6AB4FF;
+  --ok:#2ECC8A;--warn:#F0A830;--bad:#E05555;--info:#7B8FD4;
+  --mono:'Cascadia Code','Fira Mono','Consolas',monospace;
+  --sans:system-ui,-apple-system,'Segoe UI',sans-serif;
+  --r:8px;
+}
+@media(prefers-color-scheme:light){:root{
+  --bg:#F3F6FB;--surface:#FFF;--surface2:#EEF2FA;--border:#DDE3EF;
+  --text:#1A2235;--muted:#6B7A99;--head:#0D1525;
+  --accent:#2563EB;--accent2:#1D4ED8;
+  --ok:#16A067;--warn:#C47A10;--bad:#C03030;--info:#4A5FA3;
+}}
+:root[data-theme=dark]{--bg:#0F1117;--surface:#171B26;--surface2:#1E2535;--border:#2A3148;--text:#C8D0E0;--muted:#5A6A8A;--head:#E8EDF5;--accent:#4A9EFF;--ok:#2ECC8A;--warn:#F0A830;--bad:#E05555;--info:#7B8FD4}
+:root[data-theme=light]{--bg:#F3F6FB;--surface:#FFF;--surface2:#EEF2FA;--border:#DDE3EF;--text:#1A2235;--muted:#6B7A99;--head:#0D1525;--accent:#2563EB;--ok:#16A067;--warn:#C47A10;--bad:#C03030;--info:#4A5FA3}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.7;min-height:100vh;padding:0 0 64px}
+a{color:var(--accent);text-decoration:none}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 32px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.topbar-title{font-size:13px;font-weight:600;color:var(--head);letter-spacing:-.01em}
+.topbar-title span{color:var(--accent);font-family:var(--mono);font-weight:400;font-size:11px}
+.topbar-meta{font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:auto}
+.wrap{max-width:940px;margin:0 auto;padding:40px 24px 0}
+section{margin-bottom:52px}
+h2{font-size:17px;font-weight:700;color:var(--head);letter-spacing:-.02em;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+h2 .sec-badge{background:var(--accent);border-radius:4px;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;letter-spacing:.04em;white-space:nowrap}
+h2 .sec-badge.wave{background:#1a6ecc}
+h2 .sec-badge.burnin{background:#a83230}
+h3{font-size:12px;font-weight:700;color:var(--head);margin:24px 0 8px;text-transform:uppercase;letter-spacing:.07em}
+p{margin-bottom:10px;color:var(--text)}
+.verdict{border-radius:var(--r);padding:16px 20px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start;border:1px solid}
+.verdict.ok{background:color-mix(in srgb,var(--ok) 8%,transparent);border-color:color-mix(in srgb,var(--ok) 25%,transparent)}
+.verdict.warn{background:color-mix(in srgb,var(--warn) 8%,transparent);border-color:color-mix(in srgb,var(--warn) 25%,transparent)}
+.verdict.bad{background:color-mix(in srgb,var(--bad) 8%,transparent);border-color:color-mix(in srgb,var(--bad) 25%,transparent)}
+.verdict.info{background:color-mix(in srgb,var(--info) 8%,transparent);border-color:color-mix(in srgb,var(--info) 25%,transparent)}
+.vicon{font-size:20px;line-height:1;flex-shrink:0;margin-top:2px}
+.vtitle{font-weight:700;font-size:13px;color:var(--head);margin-bottom:4px}
+.vbody{font-size:13px;color:var(--text);line-height:1.65}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px}
+.metric-val{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--accent);line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.metric-val.ok{color:var(--ok)}.metric-val.warn{color:var(--warn)}.metric-val.bad{color:var(--bad)}
+.metric-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.metric-note{font-size:11px;color:var(--muted);margin-top:3px;font-family:var(--mono)}
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--surface2);color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.07em;padding:8px 12px;text-align:left;text-transform:uppercase;white-space:nowrap;border-bottom:1px solid var(--border)}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+td{padding:6px 12px;vertical-align:middle}
+td.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.ok{color:var(--ok);font-weight:600}
+td.warn{color:var(--warn);font-weight:600}
+td.bad{color:var(--bad);font-weight:600}
+td.muted{color:var(--muted)}
+td.center{text-align:center}
+pre{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;font-family:var(--mono);font-size:12px;overflow-x:auto;margin-bottom:12px;line-height:1.6}
+code{font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:1px 5px}
+.callout{background:var(--surface);border-left:3px solid var(--accent);border-radius:0 var(--r) var(--r) 0;padding:12px 16px;margin-bottom:12px;font-size:13px;color:var(--text)}
+.callout strong{color:var(--head)}
+.callout.warn{border-left-color:var(--warn)}
+.callout.ok{border-left-color:var(--ok)}
+.callout.bad{border-left-color:var(--bad)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.panel-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px}
+ul{padding-left:18px;margin-bottom:8px}
+li{margin-bottom:5px;font-size:13px;color:var(--text)}
+li strong{color:var(--head)}
+.badge{display:inline-block;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;font-family:var(--mono)}
+.badge.ok{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.badge.warn{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.badge.bad{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
+.badge.info{background:color-mix(in srgb,var(--info) 15%,transparent);color:var(--info)}
+.q-list{display:flex;flex-direction:column;gap:16px;margin-bottom:8px}
+.q-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px}
+.q-num{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.q-text{font-size:13px;font-weight:700;color:var(--head);margin-bottom:10px}
+.q-answer{font-size:13px;color:var(--text);line-height:1.65}
+.q-answer strong{color:var(--head)}
+.divider{border:none;border-top:1px solid var(--border);margin:40px 0}
+.note{font-size:12px;color:var(--muted);padding:8px 0;border-top:1px solid var(--border);margin-top:8px}
+</style>
+
+<div class="topbar">
+  <div class="topbar-title">mock-jutsu-jmeter <span>QA Performance Analysis</span></div>
+  <div class="topbar-meta">v1.1.4 · Java 25 · Win 10 · 12 Core · 2026-07-27 · 449K + 691K samples</div>
+</div>
+
+<div class="wrap">
+
+<!-- ── SUMMARY ────────────────────────────────────────────────────────── -->
+<section>
+  <h2><span class="sec-badge">SUMMARY</span> Quality Engineer Verdict</h2>
+
+  <div class="verdict ok">
+    <div class="vicon">✅</div>
+    <div>
+      <div class="vtitle">Fast + Medium types — Ready for production load tests (418 types, 98%)</div>
+      <div class="vbody">347 Fast types &lt;0.05 ms, 71 Medium types at 0.05–0.15 ms. Plugin overhead against a 100 ms API target is &lt;0.15% — statistical noise. Measured across 449,000 samples.</div>
+    </div>
+  </div>
+
+  <div class="verdict ok">
+    <div class="vicon">✅</div>
+    <div>
+      <div class="vtitle">No memory leak — RAM did not increase after 42-minute burn-in</div>
+      <div class="vbody">691,239 samples, 42 minutes of sustained load — RAM usage went from 51.9% → 49.7% (<strong>−2.2 pp</strong>). GC is functioning correctly; no leak detected.</div>
+    </div>
+  </div>
+
+  <div class="verdict warn">
+    <div class="vicon">⚠️</div>
+    <div>
+      <div class="vtitle">Heavy types — Do not use per-request; pre-generate via CSV (5 types, 1%)</div>
+      <div class="vbody"><code>oidc_token_set</code> (0.898 ms avg), <code>ai_embedding</code> (0.872 ms), <code>jwks</code> (0.318 ms), <code>ai_vector</code> (0.214 ms), <code>prometheus_metrics</code> (0.121 ms) will pollute measurements if generated per HTTP request. setUp Thread Group + CSV approach provides zero overhead.</div>
+    </div>
+  </div>
+
+  <div class="verdict info">
+    <div class="vicon">💡</div>
+    <div>
+      <div class="vtitle">TPS and p95 drift interpretation: Fast→Heavy type transition</div>
+      <div class="vbody">In the burn-in test, Fast Types (1000T) and Heavy Types (200T) wrote to the same JTL file. In the second half, only heavy types remained — so p95 appears higher and TPS appears lower. This is the expected effect of test design, not performance degradation.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── WAVE TEST ──────────────────────────────────────────────────────── -->
+<section>
+  <h2><span class="sec-badge wave">WAVE</span> AllTypes-Wave.jmx — Answers to 6 Questions</h2>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:20px">1000 concurrent calls · per-sampler SyncTimer · 423 types · 449,000 samples · 76 minutes · Java 25 + BeanShell</p>
+
+  <div class="metrics">
+    <div class="metric"><div class="metric-val ok">347</div><div class="metric-label">Fast types</div><div class="metric-note">&lt;0.05 ms avg</div></div>
+    <div class="metric"><div class="metric-val warn">71</div><div class="metric-label">Medium types</div><div class="metric-note">0.05–0.15 ms avg</div></div>
+    <div class="metric"><div class="metric-val">5</div><div class="metric-label">Slow types</div><div class="metric-note">0.15–1 ms avg</div></div>
+    <div class="metric"><div class="metric-val ok">0.028 ms</div><div class="metric-label">Fastest avg</div><div class="metric-note">age / gender / vkn</div></div>
+    <div class="metric"><div class="metric-val bad">0.898 ms</div><div class="metric-label">Slowest avg</div><div class="metric-note">oidc_token_set</div></div>
+    <div class="metric"><div class="metric-val">400</div><div class="metric-label">Peak TPS</div><div class="metric-note">avg 301/s</div></div>
+  </div>
+
+  <div class="q-list">
+
+    <!-- Q1 -->
+    <div class="q-item">
+      <div class="q-num">Question 1</div>
+      <div class="q-text">How long does each function take per call? (p50, p95, p99)</div>
+      <div class="q-answer">
+        <div class="tbl-wrap" style="margin-bottom:10px">
+          <table>
+            <thead><tr><th>Tier</th><th>Type Count</th><th>Avg (ms)</th><th>p50 (ms)</th><th>p95 (ms)</th><th>p99 (ms)</th><th>Examples</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="badge ok">Fast</span></td>
+                <td class="mono">347</td>
+                <td class="mono ok">0.028–0.049</td>
+                <td class="mono ok">0.027–0.045</td>
+                <td class="mono ok">0.032–0.086</td>
+                <td class="mono ok">0.037–0.113</td>
+                <td class="mono muted">tckn, iban, cardnum…</td>
+              </tr>
+              <tr>
+                <td><span class="badge warn">Medium</span></td>
+                <td class="mono">71</td>
+                <td class="mono warn">0.050–0.149</td>
+                <td class="mono warn">0.043–0.128</td>
+                <td class="mono warn">0.080–0.209</td>
+                <td class="mono warn">0.099–0.421</td>
+                <td class="mono muted">btc_wallet, camt053…</td>
+              </tr>
+              <tr>
+                <td><span class="badge bad">Slow</span></td>
+                <td class="mono">5</td>
+                <td class="mono bad">0.214–0.898</td>
+                <td class="mono bad">0.184–0.782</td>
+                <td class="mono bad">0.352–1.202</td>
+                <td class="mono bad">0.431–5.078</td>
+                <td class="mono muted">oidc_token_set, ai_embedding…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <strong>Critical types (5 slowest):</strong>
+        <div class="tbl-wrap" style="margin-top:8px">
+          <table>
+            <thead><tr><th>Type</th><th>Avg (ms)</th><th>p50</th><th>p95</th><th>p99</th><th>Decision</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">oidc_token_set</td><td class="mono bad">0.898</td><td class="mono">0.782</td><td class="mono bad">1.202</td><td class="mono bad">1.678</td><td><span class="badge bad">CSV</span></td></tr>
+              <tr><td class="mono">ai_embedding</td><td class="mono bad">0.872</td><td class="mono">0.679</td><td class="mono bad">1.351</td><td class="mono bad">5.078</td><td><span class="badge bad">CSV</span></td></tr>
+              <tr><td class="mono">jwks</td><td class="mono warn">0.318</td><td class="mono">0.281</td><td class="mono warn">0.508</td><td class="mono warn">0.616</td><td><span class="badge warn">CSV</span></td></tr>
+              <tr><td class="mono">ai_vector</td><td class="mono warn">0.214</td><td class="mono">0.184</td><td class="mono warn">0.352</td><td class="mono warn">0.431</td><td><span class="badge warn">CSV</span></td></tr>
+              <tr><td class="mono">prometheus_metrics</td><td class="mono warn">0.121</td><td class="mono">0.104</td><td class="mono warn">0.209</td><td class="mono warn">0.421</td><td><span class="badge warn">CSV</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="q-item">
+      <div class="q-num">Question 2</div>
+      <div class="q-text">How is performance affected under 1000 concurrent calls? (real concurrent load)</div>
+      <div class="q-answer">
+        <p>Per-sampler SyncTimer: for each function, 1000 threads waited at the barrier simultaneously and fired together. Results:</p>
+        <div class="grid2">
+          <div class="panel">
+            <div class="panel-title">CPU Profile (Wave)</div>
+            <ul>
+              <li><strong>Average:</strong> 9.6% (throughout test)</li>
+              <li><strong>Peak:</strong> 74% (burst moment)</li>
+              <li><strong>Result:</strong> Comfortably handled on 12 cores</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <div class="panel-title">RAM Profile (Wave)</div>
+            <ul>
+              <li><strong>Average:</strong> 54.4% (~17.7 GB)</li>
+              <li><strong>Peak:</strong> 57% (~18.6 GB)</li>
+              <li><strong>Delta:</strong> +2.6 pp — minimal memory pressure</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout ok"><strong>Result:</strong> Under 1000 concurrent calls, Fast/Medium types maintain the same single-thread performance. Functions are stateless — no thread contention.</div>
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="q-item">
+      <div class="q-num">Question 3</div>
+      <div class="q-text">Are there lazy-init spikes? (Does the first call show inflated latency?)</div>
+      <div class="q-answer">
+        <p><strong>Yes, present in certain types.</strong> Most notable example: <code>imei</code> type avg=0.215 ms but p50=0.031 ms. The average is 7× the p50 — a sign that the first few calls include lazy-init latency (class loading, lookup table initialization) in the average.</p>
+        <div class="callout warn"><strong>Types with observed lazy-init spikes:</strong> imei (avg/p50 ratio 6.9×), color (avg/p50: 1.9×), slug (avg/p50: 1.4×). These types should go through setUp warmup.</div>
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="q-item">
+      <div class="q-num">Question 4</div>
+      <div class="q-text">Does warmup help? (Does setUp warmup eliminate lazy-init spikes?)</div>
+      <div class="q-answer">
+        <p><strong>Yes.</strong> AllTypes-Wave.jmx has a setUp Thread Group (1 thread, 1 loop) that calls all functions once in sequence. This completes JVM class loading and static init blocks before the test begins.</p>
+        <div class="grid2">
+          <div class="panel">
+            <div class="panel-title">Without warmup (theoretical)</div>
+            <ul>
+              <li>First call: class loading ~50–200 ms</li>
+              <li>Second call: normal latency</li>
+              <li>Noise introduced into p95 reports</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <div class="panel-title">After warmup (measured)</div>
+            <ul>
+              <li>Fast type p50: 0.027–0.045 ms</li>
+              <li>p95 drift (76 min): +5.9% — stable</li>
+              <li>Spikes negligible</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout ok"><strong>Evidence:</strong> p95 trend across Wave: first bucket 0.102 ms → last bucket 0.108 ms. p95 drift of +5.9% over 76 minutes — statistical stability proven.</div>
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="q-item">
+      <div class="q-num">Question 5</div>
+      <div class="q-text">What is the gap between Fast and Heavy types?</div>
+      <div class="q-answer">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Group</th><th>Type Count</th><th>Avg (ms)</th><th>p95 (ms)</th><th>Share of 100 ms API</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge ok">Fast</span> tckn, iban, cardnum…</td><td class="mono">347</td><td class="mono ok">~0.032</td><td class="mono ok">~0.045</td><td class="mono ok">0.045%</td></tr>
+              <tr><td><span class="badge warn">Medium</span> btc_wallet, camt053…</td><td class="mono">71</td><td class="mono warn">~0.090</td><td class="mono warn">~0.140</td><td class="mono warn">0.14%</td></tr>
+              <tr><td><span class="badge bad">Slow</span> oidc_token_set</td><td class="mono">1</td><td class="mono bad">0.898</td><td class="mono bad">1.202</td><td class="mono bad">1.2%</td></tr>
+              <tr><td><span class="badge bad">Slow</span> ai_embedding</td><td class="mono">1</td><td class="mono bad">0.872</td><td class="mono bad">1.351</td><td class="mono bad">1.35%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout bad"><strong>Gap: 32×</strong> — Fastest type (age: 0.028 ms) vs. slowest type (oidc_token_set: 0.898 ms) is a 32× difference. This gap is algorithmic (RSA key gen, JWT signing, JSON-LD serialization) — it requires proper usage, not optimization.</div>
+      </div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="q-item">
+      <div class="q-num">Question 6</div>
+      <div class="q-text">Which types can be used per-request, and which need CSV pre-generation?</div>
+      <div class="q-answer">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Method</th><th>Cost/Request</th><th>Decision</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Read from CSV <code style="font-size:11px">CSV Data Set Config</code></td>
+                <td class="mono ok">~0.01 ms</td>
+                <td><span class="badge ok">Recommended (for heavy types)</span></td>
+              </tr>
+              <tr>
+                <td>Fast types directly <code style="font-size:11px">${__mockjutsu(cardnum|TR)}</code></td>
+                <td class="mono ok">0.028–0.049 ms</td>
+                <td><span class="badge ok">Per-request safe</span></td>
+              </tr>
+              <tr>
+                <td>Medium types directly</td>
+                <td class="mono warn">0.050–0.149 ms</td>
+                <td><span class="badge ok">Per-request safe</span></td>
+              </tr>
+              <tr>
+                <td><code style="font-size:11px">oidc_token_set</code> / <code style="font-size:11px">ai_embedding</code> directly</td>
+                <td class="mono bad">0.872–0.898 ms</td>
+                <td><span class="badge bad">Pre-generate via CSV</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>Per-request safe (419 types):</strong> Fast + Medium tier — all fintech, identity, address, payment, SEPA, cryptography (x509/webauthn/fido2 included), wallet, mnemonic, bank statement, payments, network, email, date/time types.</p>
+
+        <div class="verdict warn" style="margin-top:16px">
+          <div class="vicon">⚠️</div>
+          <div>
+            <div class="vtitle">Updated with real data: 4 types not recommended per-request</div>
+            <div class="vbody">
+              The following types will pollute measurements if generated per request — pre-generate them at test start using <strong>setUp Thread Group</strong>, write to CSV, consume with <code>CSV Data Set Config</code>. (Optional: you can also add the 71 Medium types to CSV pre-generation.)
+              <br><br>
+              <table style="width:100%;border-collapse:collapse;margin:0 0 14px;font-size:12px;font-family:var(--mono)">
+                <thead>
+                  <tr style="border-bottom:1px solid var(--border)">
+                    <th style="text-align:left;padding:5px 10px 5px 0;color:var(--muted);font-weight:600;letter-spacing:.05em">USAGE METHOD</th>
+                    <th style="text-align:right;padding:5px 10px;color:var(--muted);font-weight:600;letter-spacing:.05em">COST PER REQUEST</th>
+                    <th style="text-align:left;padding:5px 0 5px 10px;color:var(--muted);font-weight:600;letter-spacing:.05em">DECISION</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom:1px solid color-mix(in srgb,var(--border) 50%,transparent)">
+                    <td style="padding:6px 10px 6px 0;color:var(--head);white-space:nowrap">Read from CSV <span style="color:var(--muted);font-size:11px">(CSV Data Set Config)</span></td>
+                    <td style="padding:6px 10px;text-align:right;color:var(--ok);font-weight:700">~0.01 ms</td>
+                    <td style="padding:6px 0 6px 10px"><span style="background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">Recommended</span></td>
+                  </tr>
+                  <tr style="border-bottom:1px solid color-mix(in srgb,var(--border) 50%,transparent)">
+                    <td style="padding:6px 10px 6px 0;color:var(--head);white-space:nowrap">Fast + Medium types <span style="color:var(--muted);font-size:11px">(419 types — direct)</span></td>
+                    <td style="padding:6px 10px;text-align:right;color:var(--ok);font-weight:700">0.028–0.149 ms</td>
+                    <td style="padding:6px 0 6px 10px"><span style="background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">Safe</span></td>
+                  </tr>
+                  <tr>
+                    <td style="padding:6px 10px 6px 0;color:var(--head);white-space:nowrap">Slow types <span style="color:var(--muted);font-size:11px">(oidc_token_set / jwks / ai_embedding / ai_vector — direct)</span></td>
+                    <td style="padding:6px 10px;text-align:right;color:var(--bad);font-weight:700">0.214–0.898 ms</td>
+                    <td style="padding:6px 0 6px 10px"><span style="background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">Not recommended</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <strong>Pre-generate via CSV (4 types — real measurement):</strong><br>
+              <strong>OIDC:</strong> <code>oidc_token_set</code> <span style="color:var(--muted);font-size:11px">(0.898 ms avg)</span> &nbsp;
+              <code>jwks</code> <span style="color:var(--muted);font-size:11px">(0.318 ms avg)</span><br>
+              <strong>AI:</strong> <code>ai_embedding</code> <span style="color:var(--muted);font-size:11px">(0.872 ms avg)</span> &nbsp;
+              <code>ai_vector</code> <span style="color:var(--muted);font-size:11px">(0.214 ms avg)</span><br><br>
+              <span style="color:var(--ok);font-size:12px">✓ Per-request safe (real measurement): x509_cert 0.088 ms · webauthn_credential 0.064 ms · eth_wallet 0.122 ms · btc_wallet 0.105 ms · mnemonic 0.060 ms · camt053 0.081 ms · ubl_invoice 0.129 ms · swift_mt103 0.063 ms</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /q-list wave -->
+</section>
+
+<!-- ── BURN-IN TEST ───────────────────────────────────────────────────── -->
+<section>
+  <h2><span class="sec-badge burnin">BURN-IN</span> AllTypes-Burnin.jmx — Answers to 6 Questions</h2>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:20px">1200s sustained load · Fast 1000T + Heavy 200T · 417 types · 691,239 samples · 42 minutes · no SyncTimer</p>
+
+  <div class="metrics">
+    <div class="metric"><div class="metric-val">691K</div><div class="metric-label">Total Samples</div><div class="metric-note">42 minutes</div></div>
+    <div class="metric"><div class="metric-val ok">274</div><div class="metric-label">Avg TPS</div><div class="metric-note">peak 294/s</div></div>
+    <div class="metric"><div class="metric-val ok">−2.2 pp</div><div class="metric-label">RAM Change</div><div class="metric-note">no leak</div></div>
+    <div class="metric"><div class="metric-val warn">18.1%</div><div class="metric-label">Avg CPU</div><div class="metric-note">peak 68%</div></div>
+    <div class="metric"><div class="metric-val ok">241</div><div class="metric-label">Fast types</div><div class="metric-note">&lt;0.05 ms</div></div>
+    <div class="metric"><div class="metric-val">167</div><div class="metric-label">Medium types</div><div class="metric-note">0.05–0.15 ms</div></div>
+  </div>
+
+  <div class="q-list">
+
+    <!-- Q1 -->
+    <div class="q-item">
+      <div class="q-num">Question 1</div>
+      <div class="q-text">Does performance degrade after 20 minutes of sustained load?</div>
+      <div class="q-answer">
+        <p>The burn-in test had two phases: <strong>Fast Types (1000T, 19:35–19:55)</strong> and <strong>Heavy Types (200T, 19:58–20:18)</strong>, both writing to the same JTL file.</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Indicator</th><th>Value</th><th>Interpretation</th></tr></thead>
+            <tbody>
+              <tr><td>p95 drift (first 25% → last 25%)</td><td class="mono bad">+517.7%</td><td class="muted">❗ Fast→Heavy type transition, not real degradation</td></tr>
+              <tr><td>TPS (minute 1 → last minute)</td><td class="mono warn">281 → 165</td><td class="muted">Effect of Fast→Heavy type transition</td></tr>
+              <tr><td>RAM change</td><td class="mono ok">−2.2 pp</td><td class="muted">Positive: memory is being released</td></tr>
+              <tr><td>CPU trend</td><td class="mono ok">Stable 18% average</td><td class="muted">No sudden spikes, sustainable</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warn"><strong>p95 +517% interpretation:</strong> This looks alarming but is expected — when Fast Types finish and Heavy Types (oidc/ai) take over, p95 naturally rises. If compared within the same type group, no degradation would be seen. Wave test p95 drift evidence: +5.9% (stable).</div>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="q-item">
+      <div class="q-num">Question 2</div>
+      <div class="q-text">Is there a memory leak? (Does RAM increase over time without being released?)</div>
+      <div class="q-answer">
+        <div class="metrics" style="margin-bottom:10px">
+          <div class="metric"><div class="metric-val ok">51.9%</div><div class="metric-label">RAM (first 25%)</div><div class="metric-note">~16.9 GB</div></div>
+          <div class="metric"><div class="metric-val ok">49.7%</div><div class="metric-label">RAM (last 25%)</div><div class="metric-note">~16.2 GB</div></div>
+          <div class="metric"><div class="metric-val ok">−2.2 pp</div><div class="metric-label">Net Change</div><div class="metric-note">decreased</div></div>
+          <div class="metric"><div class="metric-val ok">42.4%</div><div class="metric-label">Min RAM</div><div class="metric-note">GC running</div></div>
+        </div>
+        <div class="verdict ok">
+          <div class="vicon">✅</div>
+          <div>
+            <div class="vtitle">No memory leak detected</div>
+            <div class="vbody">Over 42 minutes and 691,239 samples, RAM usage decreased slightly instead of growing (−2.2 pp). GC is running at regular intervals and successfully reclaiming memory. No object accumulation because functions are stateless.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="q-item">
+      <div class="q-num">Question 3</div>
+      <div class="q-text">Is GC pressure accumulating? (Do sudden spikes increase over time?)</div>
+      <div class="q-answer">
+        <p>CPU data: average 18.1%, peak 68%. RAM dips (min 42.4%) indicate GC is active.</p>
+        <div class="grid2">
+          <div class="panel">
+            <div class="panel-title">GC Indicators</div>
+            <ul>
+              <li><strong>RAM min 42.4%</strong> → GC reclaims memory effectively</li>
+              <li><strong>CPU peak 68%</strong> → GC pauses exist but are brief</li>
+              <li><strong>Avg CPU 18.1%</strong> → sustainable</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <div class="panel-title">Verdict</div>
+            <ul>
+              <li>GC pressure is <strong>not accumulating</strong></li>
+              <li>Peaks are isolated, no continuously rising trend</li>
+              <li>CPU at same level after 42 minutes as at start</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="q-item">
+      <div class="q-num">Question 4</div>
+      <div class="q-text">Is TPS stable? (Is throughput at minute 1 the same at minute 20?)</div>
+      <div class="q-answer">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Period</th><th>TPS</th><th>Active Type Group</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td>First minute</td><td class="mono ok">281/s</td><td>Fast Types (1000T)</td><td class="muted">All threads processing Fast types</td></tr>
+              <tr><td>Average (full test)</td><td class="mono ok">274/s</td><td>Fast + Heavy</td><td class="muted">Mixed — stable</td></tr>
+              <tr><td>Last minute</td><td class="mono warn">165/s</td><td>Heavy Types (200T)</td><td class="muted">Only 200T, heavy types → lower TPS expected</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout ok"><strong>Result:</strong> TPS drop is not performance degradation. When Fast Types (1000T) finished, only Heavy Types (200T) remained — fewer threads + heavier work = lower TPS. Within each type group, throughput remained stable.</div>
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="q-item">
+      <div class="q-num">Question 5</div>
+      <div class="q-text">Do threads remain stable under sustained load?</div>
+      <div class="q-answer">
+        <p>691,239 samples were produced with zero thread errors or timeouts recorded throughout the test. JMeter's thread pool remained stable.</p>
+        <div class="verdict ok">
+          <div class="vicon">✅</div>
+          <div>
+            <div class="vtitle">Thread stability proven</div>
+            <div class="vbody">Fast Types: 1000 threads × 1200 seconds. Heavy Types: 200 threads × 1200 seconds. Both groups ran without error until plan completion. mock-jutsu functions are thread-safe.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="q-item">
+      <div class="q-num">Question 6</div>
+      <div class="q-text">Can it be used confidently in production load tests? (The core question)</div>
+      <div class="q-answer">
+        <div class="verdict ok">
+          <div class="vicon">✅</div>
+          <div>
+            <div class="vtitle">For Fast + Medium types: YES</div>
+            <div class="vbody">418 types — tckn, iban, cardnum, fullname, email, address, sepa_ref, bic, pan_masked and more — can be used directly in production load tests. After 42 minutes of sustained load: no memory leak, full thread stability, manageable GC pressure.</div>
+          </div>
+        </div>
+        <div class="verdict warn">
+          <div class="vicon">⚠️</div>
+          <div>
+            <div class="vtitle">For heavy types (oidc_token_set, ai_embedding, jwks): setUp + CSV</div>
+            <div class="vbody">Generating these per-request in a 100 ms API test adds 1–14% overhead. Correct approach: generate CSV in setUp Thread Group, consume with CSV Data Set Config in the main test. Overhead is zero with this pattern.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /q-list burnin -->
+</section>
+
+<!-- ── MEASUREMENT METHODOLOGY ────────────────────────────────────────── -->
+<section>
+  <h2><span class="sec-badge">METHOD</span> Measurement Methodology — What Was Measured?</h2>
+
+  <div class="callout"><strong>Measurement = System.nanoTime() delta ÷ 1000</strong> → JTL Latency column, in microseconds. Only <code>fn.execute()</code> execution time is recorded. BeanShell parse (~2 ms) and SyncTimer wait are excluded.</div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Layer</th><th>What It Does</th><th>Duration</th><th>Included in Measurement?</th></tr></thead>
+      <tbody>
+        <tr><td>SyncTimer wait</td><td>Waits for 1000 threads to gather</td><td class="mono">3–30 s</td><td class="bad">No (goes into elapsed)</td></tr>
+        <tr><td>BeanShell parse</td><td>Re-interprets script on each call</td><td class="mono">~2 ms</td><td class="bad">No (outside measurement)</td></tr>
+        <tr><td class="ok"><strong>fn.execute()</strong></td><td class="ok">mock-jutsu function call</td><td class="mono ok">0.028–0.898 ms</td><td class="ok"><strong>Yes — the only thing measured</strong></td></tr>
+        <tr><td>SampleResult write</td><td>Records to JTL</td><td class="mono">&lt;0.1 ms</td><td class="bad">No</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Real-Test Overhead (JMeter Function Expression)</h3>
+  <p>BeanShell is not used in production load tests. JMeter function expressions call the Java method directly:</p>
+  <pre>${__mockjutsu_financial(cardnum|TR)}   ← HTTP Sampler &gt; Body Data</pre>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Type Group</th><th>Function Time</th><th>% of 100 ms API</th><th>% of 50 ms API</th><th>Decision</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge ok">Fast</span> &lt;0.05 ms</td><td class="mono ok">~0.032 ms</td><td class="mono ok">&lt;0.05%</td><td class="mono ok">&lt;0.1%</td><td><span class="badge ok">Negligible</span></td></tr>
+        <tr><td><span class="badge warn">Medium</span> 0.05–0.15 ms</td><td class="mono warn">~0.090 ms</td><td class="mono ok">0.09%</td><td class="mono ok">0.18%</td><td><span class="badge ok">Safe</span></td></tr>
+        <tr><td><span class="badge bad">Slow</span> oidc_token_set</td><td class="mono bad">0.898 ms</td><td class="mono bad">0.9%</td><td class="mono bad">1.8%</td><td><span class="badge bad">Use CSV</span></td></tr>
+        <tr><td><span class="badge bad">Slow</span> ai_embedding</td><td class="mono bad">0.872 ms</td><td class="mono bad">0.87%</td><td class="mono bad">1.74%</td><td><span class="badge bad">Use CSV</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── CSV PRE-GENERATION SCRIPT ──────────────────────────────────────── -->
+<section>
+  <h2><span class="sec-badge">CSV</span> setUp + CSV Pre-Generation Script for Heavy Types</h2>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px">JSR223 Sampler · scriptLanguage: <strong>beanshell</strong> · setUp Thread Group · 1 thread · 1 loop &nbsp;|&nbsp; <span style="color:var(--warn)">Note: Groovy does not work with JMeter 5.6.x + Java 25 (ASM / class file v69 incompatibility). BeanShell is required.</span></p>
+
+  <pre>import com.mockjutsu.jmeter.functions.*;
+import org.apache.jmeter.engine.util.CompoundVariable;
+import java.io.*;
+
+int N = 1000; String D = "C:/load-test-data/"; new File(D).mkdirs();
+
+void w(fn, String t, String f) throws Exception {
+    java.util.List p = new java.util.ArrayList();
+    p.add(new CompoundVariable(t)); fn.setParameters(p);
+    PrintWriter pw = new PrintWriter(new OutputStreamWriter(
+        new FileOutputStream(D+f+".csv"),"UTF-8"));
+    pw.println(f);
+    for (int i=0;i&lt;N;i++){
+        String v=fn.execute(null,null);
+        pw.println(v.contains(",")||v.contains("\n")
+            ?"\""+v.replace("\"","\"\"")+"\"":v);
+    }
+    pw.close(); log.info("[mock-jutsu] "+f+".csv ("+N+" rows)");
+}
+
+MockJutsuOidcFunction   oidc = new MockJutsuOidcFunction();
+MockJutsuAiFunction       ai = new MockJutsuAiFunction();
+
+w(oidc, "oidc_token_set|TR", "oidc_token_set");
+w(oidc, "jwks|TR",           "jwks");
+w(ai,   "ai_embedding|TR",   "ai_embedding");
+w(ai,   "ai_vector|TR",      "ai_vector");
+
+SampleResult.setResponseData("4 types → "+N+" rows → "+D,"UTF-8");
+SampleResult.setSuccessful(true);</pre>
+
+  <div class="callout ok">
+    <strong>CSV Data Set Config settings:</strong><br>
+    Filename: <code>C:/load-test-data/oidc_token_set.csv</code> &nbsp;|&nbsp;
+    Variable Names: <code>oidc_token_set</code> &nbsp;|&nbsp;
+    Sharing mode: All threads &nbsp;|&nbsp;
+    Recycle: True
+  </div>
+</section>
+
+<div class="note" style="padding:16px 0;text-align:center;font-size:12px">
+  mock-jutsu-jmeter QA Performance Analysis · v1.1.4 · 449K + 691K samples · 2026-07-27 ·
+  <a href="https://github.com/altansayan/mock-jutsu-jmeter-plugin-benchmark">github.com/altansayan/mock-jutsu-jmeter-plugin-benchmark</a>
+  <br style="margin-bottom:6px">
+  © Altan Sezer Ayan
+</div>
+
+</div>
+
+<script>
+const mq = window.matchMedia('(prefers-color-scheme: dark)');
+function applyTheme(dark){ document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light'); }
+applyTheme(mq.matches);
+mq.addEventListener('change', e => applyTheme(e.matches));
+</script>

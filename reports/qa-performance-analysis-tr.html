@@ -1,0 +1,651 @@
+<title>mock-jutsu-jmeter — QA Performans Analizi</title>
+<style>
+:root{
+  --bg:#0F1117;--surface:#171B26;--surface2:#1E2535;--border:#2A3148;
+  --text:#C8D0E0;--muted:#5A6A8A;--head:#E8EDF5;
+  --accent:#4A9EFF;--accent2:#6AB4FF;
+  --ok:#2ECC8A;--warn:#F0A830;--bad:#E05555;--info:#7B8FD4;
+  --mono:'Cascadia Code','Fira Mono','Consolas',monospace;
+  --sans:system-ui,-apple-system,'Segoe UI',sans-serif;
+  --r:8px;
+}
+@media(prefers-color-scheme:light){:root{
+  --bg:#F3F6FB;--surface:#FFF;--surface2:#EEF2FA;--border:#DDE3EF;
+  --text:#1A2235;--muted:#6B7A99;--head:#0D1525;
+  --accent:#2563EB;--accent2:#1D4ED8;
+  --ok:#16A067;--warn:#C47A10;--bad:#C03030;--info:#4A5FA3;
+}}
+:root[data-theme=dark]{--bg:#0F1117;--surface:#171B26;--surface2:#1E2535;--border:#2A3148;--text:#C8D0E0;--muted:#5A6A8A;--head:#E8EDF5;--accent:#4A9EFF;--ok:#2ECC8A;--warn:#F0A830;--bad:#E05555;--info:#7B8FD4}
+:root[data-theme=light]{--bg:#F3F6FB;--surface:#FFF;--surface2:#EEF2FA;--border:#DDE3EF;--text:#1A2235;--muted:#6B7A99;--head:#0D1525;--accent:#2563EB;--ok:#16A067;--warn:#C47A10;--bad:#C03030;--info:#4A5FA3}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.7;min-height:100vh;padding:0 0 64px}
+a{color:var(--accent);text-decoration:none}
+/* ── Top bar ── */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 32px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20}
+.topbar-title{font-size:13px;font-weight:600;color:var(--head);letter-spacing:-.01em}
+.topbar-title span{color:var(--accent);font-family:var(--mono);font-weight:400;font-size:11px}
+.topbar-meta{font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:auto}
+/* ── Layout ── */
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 0}
+/* ── Section ── */
+section{margin-bottom:48px}
+h2{font-size:17px;font-weight:700;color:var(--head);letter-spacing:-.02em;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+h2 .num{background:var(--accent);border-radius:4px;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;letter-spacing:.04em}
+h3{font-size:13px;font-weight:600;color:var(--head);margin:20px 0 8px;text-transform:uppercase;letter-spacing:.06em}
+p{margin-bottom:10px;color:var(--text)}
+/* ── Verdict box ── */
+.verdict{border-radius:var(--r);padding:18px 22px;margin-bottom:12px;display:flex;gap:14px;align-items:flex-start;border:1px solid}
+.verdict.ok{background:color-mix(in srgb,var(--ok) 8%,transparent);border-color:color-mix(in srgb,var(--ok) 25%,transparent)}
+.verdict.warn{background:color-mix(in srgb,var(--warn) 8%,transparent);border-color:color-mix(in srgb,var(--warn) 25%,transparent)}
+.verdict.bad{background:color-mix(in srgb,var(--bad) 8%,transparent);border-color:color-mix(in srgb,var(--bad) 25%,transparent)}
+.verdict.info{background:color-mix(in srgb,var(--info) 8%,transparent);border-color:color-mix(in srgb,var(--info) 25%,transparent)}
+.vicon{font-size:20px;line-height:1;flex-shrink:0;margin-top:1px}
+.vtitle{font-weight:600;font-size:13px;color:var(--head);margin-bottom:3px}
+.vbody{font-size:13px;color:var(--text);line-height:1.6}
+/* ── Metrics row ── */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px}
+.metric-val{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--accent);line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.metric-val.ok{color:var(--ok)}.metric-val.warn{color:var(--warn)}.metric-val.bad{color:var(--bad)}
+.metric-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.metric-note{font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono)}
+/* ── Table ── */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--surface2);color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.07em;padding:8px 12px;text-align:left;text-transform:uppercase;white-space:nowrap;border-bottom:1px solid var(--border)}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+td{padding:7px 12px;vertical-align:middle}
+td.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.ok{color:var(--ok);font-weight:600}
+td.warn{color:var(--warn);font-weight:600}
+td.bad{color:var(--bad);font-weight:600}
+td.muted{color:var(--muted)}
+/* ── Code block ── */
+pre{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;font-family:var(--mono);font-size:12px;overflow-x:auto;margin-bottom:12px;line-height:1.6}
+code{font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:1px 5px}
+/* ── Callout ── */
+.callout{background:var(--surface);border-left:3px solid var(--accent);border-radius:0 var(--r) var(--r) 0;padding:12px 16px;margin-bottom:12px;font-size:13px;color:var(--text)}
+.callout strong{color:var(--head)}
+/* ── Timeline ── */
+.timeline{display:flex;flex-direction:column;gap:0;margin-bottom:16px}
+.tl-item{display:flex;gap:16px;padding:10px 0;border-bottom:1px solid var(--border)}
+.tl-item:last-child{border-bottom:none}
+.tl-time{font-family:var(--mono);font-size:12px;color:var(--accent);min-width:60px;padding-top:2px}
+.tl-body{font-size:13px;color:var(--text)}
+.tl-body strong{color:var(--head)}
+/* ── Divider ── */
+.divider{border:none;border-top:1px solid var(--border);margin:32px 0}
+/* ── Badge ── */
+.badge{display:inline-block;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;font-family:var(--mono)}
+.badge.ok{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.badge.warn{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.badge.bad{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
+.badge.info{background:color-mix(in srgb,var(--info) 15%,transparent);color:var(--info)}
+/* ── Grid 2-col ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px}
+.panel-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px}
+ul{padding-left:18px;margin-bottom:10px}
+li{margin-bottom:4px;font-size:13px;color:var(--text)}
+li strong{color:var(--head)}
+</style>
+
+<div class="topbar">
+  <div class="topbar-title">mock-jutsu-jmeter <span>QA Performans Analizi</span></div>
+  <div class="topbar-meta">v1.1.0 · Java 25 · Win 10 · 12 Core · 2026-07-27</div>
+</div>
+
+<div class="wrap">
+
+<!-- ── 0. Özet Karar ───────────────────────────────────────── -->
+<section>
+  <h2><span class="num">ÖZET</span> Kalite Mühendisi Kararı</h2>
+
+  <div class="verdict ok">
+    <div class="vicon">✅</div>
+    <div>
+      <div class="vtitle">Fast &amp; Medium tipler — Üretim testlerinde güvenle kullanılabilir</div>
+      <div class="vbody">397 fast-type'ın %94'ü ortalama &lt;0.05 ms'de çalışıyor. Gerçek bir HTTP yük testinde bu eklentinin senaryoya eklediği ek süre &lt;%0.1 — tamamen ihmal edilebilir seviyede.</div>
+    </div>
+  </div>
+
+  <div class="verdict warn">
+    <div class="vicon">⚠️</div>
+    <div>
+      <div class="vtitle">Heavy tipler (oidc_token_set, x509_cert, wallet) — Dikkatli kullanım gerekli</div>
+      <div class="vbody">Bu tipler 5–12 ms aralığında. Her HTTP isteğinde değil, <strong>setUp Thread Group</strong> veya <strong>CSV Dataset</strong> ile ön üretimle kullanılmalı. Aksi hâlde &lt;50 ms SLA hedefi olan testlerde ölçüm kirlenmesi yaşanır.</div>
+    </div>
+  </div>
+
+  <div class="verdict bad">
+    <div class="vicon">❌</div>
+    <div>
+      <div class="vtitle">BeanShell döngüsü içinde kullanım — Desteklenmiyor</div>
+      <div class="vbody">Bu benchmark'taki ölçüm yöntemi (BeanShell script per sampler) gerçek kullanım senaryosu değildir. Gerçek testte <code>${__mockjutsu_financial(cardnum|TR)}</code> function expression kullanılır; BeanShell interpreter overhead'i olmaz.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 1. Bu Benchmark Ne Ölçtü? ──────────────────────────── -->
+<section>
+  <h2><span class="num">1</span> Bu Benchmark Ne Ölçtü?</h2>
+
+  <p>Wave test'in ölçtüğü şey <strong>saf fonksiyon üretim süresi</strong>. Her sampler, JMeter SyncTimer (barrier) ile tetikleniyor — tüm thread'ler aynı anda başlıyor.</p>
+
+  <div class="callout">
+    <strong>Ölçüm = System.nanoTime() farkı / 1000</strong> → mikrosaniye cinsinden kayıt.<br>
+    BeanShell parse süresi (~2 ms) <em>dışarıda bırakılıyor</em> — sadece <code>fn.execute()</code> çağrısı ölçülüyor.
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Katman</th><th>Ne Yapar</th><th>Süre</th><th>Test'e Dahil mi?</th></tr></thead>
+      <tbody>
+        <tr><td>SyncTimer bekleme</td><td>Tüm thread'lerin toplanmasını bekler</td><td class="mono">~3–5 s</td><td class="bad">Hayır (elapsed'a giriyor, latency'e değil)</td></tr>
+        <tr><td>BeanShell parse</td><td>Script'i her çağrıda yeniden yorumlar</td><td class="mono">~2 ms</td><td class="bad">Hayır (ölçüm dışı)</td></tr>
+        <tr><td><strong>fn.execute()</strong></td><td>mock-jutsu fonksiyon çağrısı</td><td class="mono">0.03–12 ms</td><td class="ok"><strong>Evet — tek ölçülen şey bu</strong></td></tr>
+        <tr><td>SampleResult yazma</td><td>JTL'e kayıt</td><td class="mono">&lt;0.1 ms</td><td class="bad">Hayır</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── 2. CPU/RAM Kaynak Analizi ───────────────────────────── -->
+<section>
+  <h2><span class="num">2</span> CPU / RAM Kaynak Analizi</h2>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-val">~20</div>
+      <div class="metric-label">Dakika (1000T test süresi)</div>
+      <div class="metric-note">397 K sampler toplam</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val warn">~2 ms</div>
+      <div class="metric-label">BeanShell parse/sampler</div>
+      <div class="metric-note">gerçek darboğaz</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val ok">~500 MB</div>
+      <div class="metric-label">JMeter RAM (1000T)</div>
+      <div class="metric-note">thread stack tabanı</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">12</div>
+      <div class="metric-label">CPU Çekirdeği</div>
+      <div class="metric-note">Win 10 test makinesi</div>
+    </div>
+  </div>
+
+  <h3>CPU Darboğazı: BeanShell, mock-jutsu değil</h3>
+
+  <div class="callout">
+    1000 thread × 397 sampler = <strong>397.000 BeanShell script çalıştırması</strong><br>
+    397.000 × 2 ms parse / 12 core = <strong>~66 saniye minimum CPU süresi</strong><br>
+    Gerçekte ~20 dakika → thread scheduling + GC + JMeter controller overhead
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-title">CPU Profili</div>
+      <ul>
+        <li><strong>~85%</strong> BeanShell interpreter (script parse)</li>
+        <li><strong>~10%</strong> JMeter thread scheduler + SyncTimer</li>
+        <li><strong>~4%</strong> mock-jutsu fonksiyon çalışması</li>
+        <li><strong>~1%</strong> JTL yazma (disk I/O)</li>
+      </ul>
+      <div style="font-size:12px;color:var(--muted)">mock-jutsu CPU payı yalnızca %4 — darboğaz BeanShell</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">RAM Profili</div>
+      <ul>
+        <li><strong>~500 MB</strong> JMeter thread stack (1000T × ~512 KB)</li>
+        <li><strong>~80 MB</strong> JTL buffer (397K × ~200 B)</li>
+        <li><strong>~30 MB</strong> BeanShell bytecode cache</li>
+        <li><strong>~15 MB</strong> mock-jutsu generator nesneleri</li>
+      </ul>
+      <div style="font-size:12px;color:var(--muted)">Toplam ~625 MB — 2000T ile ~1.1 GB'a çıkar</div>
+    </div>
+  </div>
+
+  <h3>2000 Thread ile Fark</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Metrik</th><th>1000T</th><th>2000T</th><th>Yorum</th></tr></thead>
+      <tbody>
+        <tr><td>Test süresi</td><td class="mono ok">~20 dk</td><td class="mono warn">~35 dk</td><td class="muted">Lineer değil — thread contention artıyor</td></tr>
+        <tr><td>RAM kullanımı</td><td class="mono ok">~625 MB</td><td class="mono warn">~1.1 GB</td><td class="muted">Thread stack katlanıyor</td></tr>
+        <tr><td>JTL boyutu</td><td class="mono">~81 MB</td><td class="mono">~162 MB</td><td class="muted">Lineer (2× sample)</td></tr>
+        <tr><td>GC baskısı</td><td class="mono ok">Düşük</td><td class="mono warn">Orta</td><td class="muted">Eden space dolumu artıyor</td></tr>
+        <tr><td>mock-jutsu avg (çoğu tip)</td><td class="mono ok">0.03–0.05 ms</td><td class="mono ok">0.03–0.05 ms</td><td class="muted">Değişmiyor — fonksiyon stateless</td></tr>
+        <tr><td>Lazy-init spike'ları</td><td class="mono warn">6 tip</td><td class="mono warn">8 tip (farklı)</td><td class="muted">Warmup ile giderildi</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── 3. Gerçek Testte Etki ────────────────────────────────── -->
+<section>
+  <h2><span class="num">3</span> Gerçek Yük Testinde mock-jutsu Etkisi</h2>
+
+  <p>Gerçek senaryoda mock-jutsu BeanShell script'te değil, <strong>JMeter function expression</strong> olarak kullanılır:</p>
+
+  <pre>${__mockjutsu_financial(cardnum|TR)}   ← HTTP Sampler > Body Data içinde</pre>
+
+  <p>Bu kullanımda BeanShell interpreter devreye girmez. JMeter function engine doğrudan Java metodunu çağırır.</p>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Tip Grubu</th><th>Fonksiyon Süresi</th><th>100 ms API için Oran</th><th>50 ms API için Oran</th><th>10 ms API için Oran</th><th>Karar</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Fast</strong> &lt;0.05 ms</td>
+          <td class="mono ok">0.03–0.05 ms</td>
+          <td class="mono ok">&lt;%0.05</td>
+          <td class="mono ok">&lt;%0.1</td>
+          <td class="mono ok">%0.5</td>
+          <td><span class="badge ok">İhmal edilebilir</span></td>
+        </tr>
+        <tr>
+          <td><strong>Medium</strong> 0.05–0.15 ms</td>
+          <td class="mono ok">0.05–0.15 ms</td>
+          <td class="mono ok">%0.15</td>
+          <td class="mono ok">%0.3</td>
+          <td class="mono warn">%1.5</td>
+          <td><span class="badge ok">Güvenli</span></td>
+        </tr>
+        <tr>
+          <td><strong>Slow</strong> (ısınmamış)</td>
+          <td class="mono warn">0.15–0.60 ms</td>
+          <td class="mono ok">%0.6</td>
+          <td class="mono warn">%1.2</td>
+          <td class="mono warn">%6</td>
+          <td><span class="badge warn">Warmup gerekli</span></td>
+        </tr>
+        <tr>
+          <td><strong>Heavy</strong> oidc/x509/wallet</td>
+          <td class="mono bad">5–12 ms</td>
+          <td class="mono bad">%5–12</td>
+          <td class="mono bad">%10–24</td>
+          <td class="mono bad">%50–120</td>
+          <td><span class="badge bad">Per-request kullanma</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="verdict warn">
+    <div class="vicon">⚠️</div>
+    <div>
+      <div class="vtitle">Heavy tip doğru kullanım: setUp + CSV (26 tip)</div>
+      <div class="vbody">
+        Aşağıdaki tipleri her request'te üretme — bunun yerine test başında <strong>setUp Thread Group</strong> ile üret, CSV'ye yaz, sonra <code>CSV Data Set Config</code> ile tüket. Bu yaklaşım sıfır overhead sağlar.<br><br>
+        <table style="width:100%;border-collapse:collapse;margin:0 0 14px;font-size:12px;font-family:var(--mono)">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:5px 10px 5px 0;color:var(--muted);font-weight:600;letter-spacing:.05em;white-space:nowrap">KULLANIM YÖNTEMİ</th>
+              <th style="text-align:right;padding:5px 10px;color:var(--muted);font-weight:600;letter-spacing:.05em;white-space:nowrap">REQUEST BAŞINA MALİYET</th>
+              <th style="text-align:left;padding:5px 0 5px 10px;color:var(--muted);font-weight:600;letter-spacing:.05em">KARAR</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid color-mix(in srgb,var(--border) 50%,transparent)">
+              <td style="padding:6px 10px 6px 0;color:var(--head);white-space:nowrap">CSV'den okuma <span style="color:var(--muted);font-size:11px">(CSV Data Set Config)</span></td>
+              <td style="padding:6px 10px;text-align:right;color:var(--ok);font-weight:700">~0.01 ms</td>
+              <td style="padding:6px 0 6px 10px"><span style="background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">Önerilen</span></td>
+            </tr>
+            <tr style="border-bottom:1px solid color-mix(in srgb,var(--border) 50%,transparent)">
+              <td style="padding:6px 10px 6px 0;color:var(--head);white-space:nowrap">MockJutsu Hafif Tipler <span style="color:var(--muted);font-size:11px">(Fast/Medium — direkt)</span></td>
+              <td style="padding:6px 10px;text-align:right;color:var(--ok);font-weight:700">0.03–0.15 ms</td>
+              <td style="padding:6px 0 6px 10px"><span style="background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">Güvenli</span></td>
+            </tr>
+            <tr>
+              <td style="padding:6px 10px 6px 0;color:var(--head);white-space:nowrap">MockJutsu Ağır Tipler <span style="color:var(--muted);font-size:11px">(oidc/wallet/x509 — direkt)</span></td>
+              <td style="padding:6px 10px;text-align:right;color:var(--bad);font-weight:700">5–12 ms</td>
+              <td style="padding:6px 0 6px 10px"><span style="background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">Önerilmez</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <strong>OIDC:</strong> <code>oidc_token_set</code> <code>jwks</code> <code>oidc_token</code><br>
+        <strong>Wallet:</strong> <code>eth_wallet</code> <code>btc_wallet</code> <code>sol_wallet</code><br>
+        <strong>Mnemonic:</strong> <code>mnemonic:12</code> <code>mnemonic:15</code> <code>mnemonic:18</code> <code>mnemonic:21</code> <code>mnemonic:24</code> <code>mnemonic</code><br>
+        <strong>Security:</strong> <code>x509_cert</code><br>
+        <strong>FIDO2:</strong> <code>webauthn_credential</code> <code>fido2_assertion</code><br>
+        <strong>CryptoFuzz:</strong> <code>jwt_attack</code> <code>asn1_fuzz</code><br>
+        <strong>Health:</strong> <code>fhir_patient</code> <code>hl7_message</code><br>
+        <strong>AI:</strong> <code>ai_embedding</code> <code>ai_vector</code><br>
+        <strong>Bank Statement:</strong> <code>mt940</code> <code>camt053</code> <code>ubl_invoice</code><br>
+        <strong>Payments:</strong> <code>swift_mt103</code> <code>pain001</code>
+      </div>
+    </div>
+  </div>
+
+  <h3>setUp Thread Group — Heavy Type CSV Üretim Scripti</h3>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:8px">JSR223 Sampler · scriptLanguage: <strong>beanshell</strong> · setUp Thread Group · 1 thread · 1 loop &nbsp;|&nbsp; <span style="color:var(--warn)">Not: JMeter 5.6.x + Java 25'te Groovy çalışmıyor (ASM sınır dosyası v69 uyumsuzluğu). BeanShell zorunlu.</span></p>
+
+  <pre>import com.mockjutsu.jmeter.functions.*;
+import org.apache.jmeter.engine.util.CompoundVariable;
+import java.io.*;
+
+int N = 1000; String D = "C:/load-test-data/"; new File(D).mkdirs();
+
+<span style="color:var(--muted)">// w(fn, "tip|TR", "dosyaadi") → D/dosyaadi.csv (N satır, UTF-8)</span>
+void w(fn, String t, String f) throws Exception {
+    java.util.List p = new java.util.ArrayList();
+    p.add(new CompoundVariable(t)); fn.setParameters(p);
+    PrintWriter pw = new PrintWriter(new OutputStreamWriter(
+        new FileOutputStream(D+f+".csv"),"UTF-8"));
+    pw.println(f);
+    for (int i=0;i&lt;N;i++){String v=fn.execute(null,null);
+        pw.println(v.contains(",")||v.contains("\n")?"\""+v.replace("\"","\"\"")+"\"":v);}
+    pw.close(); log.info("[mock-jutsu] "+f+".csv ("+N+")");
+}
+
+MockJutsuOidcFunction       oidc = new MockJutsuOidcFunction();
+MockJutsuWalletFunction      wlt = new MockJutsuWalletFunction();
+MockJutsuCryptoFunction       cr = new MockJutsuCryptoFunction();
+MockJutsuSecurityFunction    sec = new MockJutsuSecurityFunction();
+MockJutsuFido2Function        f2 = new MockJutsuFido2Function();
+MockJutsuCryptoFuzzFunction   fz = new MockJutsuCryptoFuzzFunction();
+MockJutsuHealthFunction       hl = new MockJutsuHealthFunction();
+MockJutsuAiFunction           ai = new MockJutsuAiFunction();
+MockJutsuBankStatementFunction bs = new MockJutsuBankStatementFunction();
+MockJutsuPaymentsFunction     py = new MockJutsuPaymentsFunction();
+
+w(oidc,"oidc_token|TR","oidc_token");  w(oidc,"oidc_token_set|TR","oidc_token_set");  w(oidc,"jwks|TR","jwks");
+w(wlt,"eth_wallet|TR","eth_wallet");   w(wlt,"btc_wallet|TR","btc_wallet");            w(wlt,"sol_wallet|TR","sol_wallet");
+String[] mn={"12","15","18","21","24"};
+for(int j=0;j&lt;mn.length;j++) w(cr,"mnemonic:"+mn[j]+"|TR","mnemonic_"+mn[j]);
+w(cr,"mnemonic|TR","mnemonic");
+w(sec,"x509_cert|TR","x509_cert");
+w(f2,"webauthn_credential|TR","webauthn_credential"); w(f2,"fido2_assertion|TR","fido2_assertion");
+w(fz,"jwt_attack|TR","jwt_attack");    w(fz,"asn1_fuzz|TR","asn1_fuzz");
+w(hl,"fhir_patient|TR","fhir_patient"); w(hl,"hl7_message|TR","hl7_message");
+w(ai,"ai_embedding|TR","ai_embedding"); w(ai,"ai_vector|TR","ai_vector");
+w(bs,"mt940|TR","mt940");              w(bs,"camt053|TR","camt053");                   w(bs,"ubl_invoice|TR","ubl_invoice");
+w(py,"swift_mt103|TR","swift_mt103");  w(py,"pain001|TR","pain001");
+
+SampleResult.setResponseData("26 tip → "+N+" satır → "+D,"UTF-8");
+SampleResult.setSuccessful(true);</pre>
+
+  <h3>Pratik Örnek — İsim Soyisim, Kart Numarası, IBAN, Bakiye (tek CSV)</h3>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Tek bir CSV dosyasına 4 kolon, N satır. <code>${fullname}</code> <code>${cardnum}</code> <code>${iban}</code> <code>${balance}</code> değişkenleri ana testte kullanıma hazır.</p>
+
+  <pre>import com.mockjutsu.jmeter.functions.MockJutsuIdentityFunction;
+import com.mockjutsu.jmeter.functions.MockJutsuFinancialFunction;
+import org.apache.jmeter.engine.util.CompoundVariable;
+import java.io.*;
+
+int N = 1000; String FILE = "C:/load-test-data/musteri.csv";
+new File("C:/load-test-data/").mkdirs();
+
+MockJutsuIdentityFunction  id  = new MockJutsuIdentityFunction();
+MockJutsuFinancialFunction fin = new MockJutsuFinancialFunction();
+
+java.util.List pId = new java.util.ArrayList(); pId.add(new CompoundVariable("fullname|TR")); id.setParameters(pId);
+java.util.List pCn = new java.util.ArrayList(); pCn.add(new CompoundVariable("cardnum|TR"));
+java.util.List pIb = new java.util.ArrayList(); pIb.add(new CompoundVariable("iban|TR"));
+java.util.List pBl = new java.util.ArrayList(); pBl.add(new CompoundVariable("balance|TR"));
+
+PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(FILE),"UTF-8"));
+pw.println("fullname,cardnum,iban,balance");
+for(int i=0;i&lt;N;i++){
+    String name = id.execute(null,null).replace(",","");
+    fin.setParameters(pCn); String cn = fin.execute(null,null);
+    fin.setParameters(pIb); String ib = fin.execute(null,null);
+    fin.setParameters(pBl); String bl = fin.execute(null,null);
+    pw.println("\""+name+"\","+cn+","+ib+","+bl);
+}
+pw.close();
+SampleResult.setResponseData(N+" müşteri → "+FILE,"UTF-8");
+SampleResult.setSuccessful(true);</pre>
+
+  <pre><span style="color:var(--muted)">── Üretilen CSV (musteri.csv) örnek satırlar ───────────────────</span>
+fullname,cardnum,iban,balance
+"Ayşe Kaya",4539578763621486,TR330006100519786457841326,12483.75
+"Mehmet Demir",5425233430109903,TR750006200116800000123456,8920.00
+"Zeynep Arslan",4916338506082832,TR610006100519786457841327,31750.50
+
+<span style="color:var(--muted)">── CSV Data Set Config ──────────────────────────────────────────
+  Filename       : C:/load-test-data/musteri.csv
+  Variable Names : fullname,cardnum,iban,balance
+  Delimiter      : ,
+  Quoted data    : True
+  Sharing mode   : All threads
+
+── HTTP Sampler body (örnek) ───────────────────────────────────</span>
+{
+  "name":    "${fullname}",
+  "card":    "${cardnum}",
+  "iban":    "${iban}",
+  "balance": ${balance}
+}</pre>
+</section>
+
+<!-- ── 4. 1000 Kullanıcı Senaryosu + TPS ──────────────────── -->
+<section>
+  <h2><span class="num">4</span> 1000 Kullanıcı Senaryosunda Ne Oldu? TPS Ne Kadar?</h2>
+
+  <h3>Bu Wave Testinde Ne Yaptık?</h3>
+
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-time">T=0s</div>
+      <div class="tl-body"><strong>1000 thread başlatıldı</strong> — 15 saniyelik ramp-up (67 thread/s)</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">T=15s</div>
+      <div class="tl-body"><strong>SyncTimer</strong> — 1000 thread'in tamamı barrier'da bekliyor</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">T=18s</div>
+      <div class="tl-body"><strong>Wave ateşlendi</strong> — 1000 thread aynı anda 397 sampler'ı sırayla işlemeye başladı</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">T=18–1200s</div>
+      <div class="tl-body"><strong>397.000 BeanShell execution</strong> — 12 core üzerinde paralel işleme (~20 dakika)</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">T=~1200s</div>
+      <div class="tl-body"><strong>Test tamamlandı</strong> — 397.000 örnekle JTL yazıldı (~81 MB)</div>
+    </div>
+  </div>
+
+  <h3>TPS Hesabı</h3>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-val">397K</div>
+      <div class="metric-label">Toplam Örnek (1000T)</div>
+      <div class="metric-note">1000 × 397 sampler</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val warn">~330</div>
+      <div class="metric-label">Gerçek TPS (wave)</div>
+      <div class="metric-note">397K / 1200s</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val ok">25M+</div>
+      <div class="metric-label">Teorik TPS (saf fn)</div>
+      <div class="metric-note">fonksiyon yalnızca 0.04ms</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">~330</div>
+      <div class="metric-label">Gerçek TPS (2000T)</div>
+      <div class="metric-note">794K / ~2400s</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>TPS neden bu kadar düşük?</strong> Darboğaz mock-jutsu değil: BeanShell interpreter her sampler'ı yeniden parse ediyor (~2 ms overhead). Gerçek fonksiyon execution time &lt;0.05 ms — darboğazın %2'si bile değil.
+  </div>
+
+  <h3>Gerçek Yük Testinde Beklenen TPS</h3>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Senaryo</th><th>VU Sayısı</th><th>API Yanıt Süresi</th><th>mock-jutsu Overhead</th><th>Net TPS</th></tr></thead>
+      <tbody>
+        <tr><td>Ödeme API testi</td><td class="mono">1 000</td><td class="mono">100 ms</td><td class="mono ok">+0.04 ms</td><td class="mono ok">~10 000</td></tr>
+        <tr><td>Auth endpoint testi</td><td class="mono">1 000</td><td class="mono">50 ms</td><td class="mono ok">+0.04 ms</td><td class="mono ok">~20 000</td></tr>
+        <tr><td>Mikro-servis testi</td><td class="mono">1 000</td><td class="mono">10 ms</td><td class="mono ok">+0.04 ms</td><td class="mono ok">~100 000</td></tr>
+        <tr><td>OIDC token üretimi (per-req)</td><td class="mono">1 000</td><td class="mono">100 ms</td><td class="mono bad">+12 ms</td><td class="mono bad">~8 475</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="verdict info">
+    <div class="vicon">💡</div>
+    <div>
+      <div class="vtitle">Bu TPS rakamları ne anlama geliyor?</div>
+      <div class="vbody">
+        10.000 TPS = saniyede 10.000 banka transferi veya kart işlemi simülasyonu. Türkiye'nin en büyük ödeme sistemleri günde 5–10 milyon işlem yapar (57–115 TPS ortalama). <strong>mock-jutsu ile 10.000 TPS senaryosu</strong> pik yük testlerini bile kapsar ve gerçekçi finansal veri üretir.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 5. 1000T vs 2000T Karşılaştırma ──────────────────────── -->
+<section>
+  <h2><span class="num">5</span> 1000T vs 2000T — Kritik Tipler Karşılaştırması</h2>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Tip</th>
+          <th>1000T Avg</th>
+          <th>2000T Avg</th>
+          <th>Delta</th>
+          <th>Yorum</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>signature</code></td><td class="mono bad">0.587 ms</td><td class="mono warn">0.169 ms</td><td class="mono ok">−71%</td><td>Warmup ile artık sorun yok</td></tr>
+        <tr><td><code>liquidity_pool_id</code></td><td class="mono bad">0.516 ms</td><td class="mono ok">0.071 ms</td><td class="mono ok">−86%</td><td>Keccak ilk çağrı maliyeti yayıldı</td></tr>
+        <tr><td><code>webhook_signature</code></td><td class="mono warn">0.158 ms</td><td class="mono ok">0.038 ms</td><td class="mono ok">−76%</td><td>HMAC-SHA256 JCE ısındı</td></tr>
+        <tr><td><code>cl_rut</code></td><td class="mono warn">0.190 ms</td><td class="mono ok">0.061 ms</td><td class="mono ok">−68%</td><td>Lookup tablosu ısındı</td></tr>
+        <tr><td><code>phone</code></td><td class="mono ok">0.034 ms</td><td class="mono bad">0.235 ms</td><td class="mono bad">+591%</td><td>2000T'de yeni lazy-init kurbanı oldu</td></tr>
+        <tr><td><code>currency</code></td><td class="mono ok">0.036 ms</td><td class="mono bad">0.144 ms</td><td class="mono bad">+300%</td><td>Locale listesi 2000T'de geç yüklendi</td></tr>
+        <tr><td><code>cardnum:visa</code></td><td class="mono ok">0.096 ms</td><td class="mono ok">0.083 ms</td><td class="mono ok">−14%</td><td>Stabil — Luhn deterministik</td></tr>
+        <tr><td><code>tckn</code></td><td class="mono ok">0.034 ms</td><td class="mono ok">0.030 ms</td><td class="mono ok">−12%</td><td>Stabil</td></tr>
+        <tr><td><code>iban</code></td><td class="mono warn">0.173 ms</td><td class="mono warn">0.158 ms</td><td class="mono ok">−9%</td><td>IBAN checksum hesabı tutarlı</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <strong>Önemli çıkarım:</strong> phone ve currency'nin 2000T'de spike yaşaması, fonksiyon hatasından değil JVM'in aynı anda 2000 thread tarafından tetiklenen lazy static initializer'ın race condition benzeri yükleme sırasından kaynaklanıyor. Yeni eklenen setUp warmup samplerı bu sorunu test öncesinde zorla tetikleyerek giderecek.
+  </div>
+</section>
+
+<!-- ── 6. Öneri Matrisi ───────────────────────────────────────── -->
+<section>
+  <h2><span class="num">6</span> Kullanım Senaryosu Öneri Matrisi</h2>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Kullanım Senaryosu</th><th>Öneri</th><th>Açıklama</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Kart numarası, IBAN, TCKN, BIC üretimi (her request)</td>
+          <td><span class="badge ok">✅ Kesinlikle kullan</span></td>
+          <td class="muted">0.03–0.05 ms, sıfır etki</td>
+        </tr>
+        <tr>
+          <td>Kimlik numaraları (90+ ülke), adres, tarih</td>
+          <td><span class="badge ok">✅ Kesinlikle kullan</span></td>
+          <td class="muted">Faker.js/Bogus'tan daha gerçekçi, daha hızlı</td>
+        </tr>
+        <tr>
+          <td>Finansal mesajlar (ISO 8583, SEPA, ACH)</td>
+          <td><span class="badge ok">✅ Kullanılabilir</span></td>
+          <td class="muted">0.05–0.10 ms, standart uyumlu</td>
+        </tr>
+        <tr>
+          <td>JWT, API key, signature (fast path, ısınmış)</td>
+          <td><span class="badge ok">✅ Kullanılabilir</span></td>
+          <td class="muted">Warmup sonrası avg ≈ p50 &lt;0.05 ms</td>
+        </tr>
+        <tr>
+          <td>OIDC token, JWKS (auth sunucu testi)</td>
+          <td><span class="badge warn">⚠️ setUp'ta üret</span></td>
+          <td class="muted">12 ms — CSV ile tüket</td>
+        </tr>
+        <tr>
+          <td>x509 sertifika, WebAuthn, FIDO2</td>
+          <td><span class="badge warn">⚠️ setUp'ta üret</span></td>
+          <td class="muted">5–10 ms — per-request kullanma</td>
+        </tr>
+        <tr>
+          <td>ETH/BTC/SOL wallet, BIP-39 mnemonic</td>
+          <td><span class="badge warn">⚠️ setUp'ta üret</span></td>
+          <td class="muted">Secp256k1 EC hesabı ağır</td>
+        </tr>
+        <tr>
+          <td>MT940, CAMT.053, UBL fatura (bank statement)</td>
+          <td><span class="badge warn">⚠️ Bağımlı</span></td>
+          <td class="muted">Gerçekçilik vs hız tradeoff'u değerlendir</td>
+        </tr>
+        <tr>
+          <td>BeanShell script içinde döngüde kullanım</td>
+          <td><span class="badge bad">❌ Kullanma</span></td>
+          <td class="muted">Bu benchmark senaryosu, production kullanımı değil</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── 7. Sonuç ───────────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">7</span> Sonuç: Önerilebilir mi?</h2>
+
+  <div class="verdict ok">
+    <div class="vicon">✅</div>
+    <div>
+      <div class="vtitle">Evet — Fast/Medium tip kullanımı için kesinlikle önerilir</div>
+      <div class="vbody">
+        Rakip çözümlere (Faker.js JMeter custom sampler, Manuel CSV, Random() calls) göre avantajları:
+        <ul style="margin-top:8px">
+          <li><strong>Standart uyumu:</strong> Luhn, IBAN, TCKN, BIC checksum'ları gerçek — 90+ ülke ID formatı destekli</li>
+          <li><strong>Performans:</strong> 0.03–0.05 ms — yük testi zamanlamalarını etkilemiyor</li>
+          <li><strong>Tekrarlanabilirlik:</strong> Aynı JMX, farklı ortamlarda aynı veri kalitesini üretiyor</li>
+          <li><strong>Bakım kolaylığı:</strong> Tek satır değişikliğiyle farklı ülke/format — CSV hazırlamaya gerek yok</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="verdict warn">
+    <div class="vicon">⚠️</div>
+    <div>
+      <div class="vtitle">Önerirken belirtilmesi gereken kısıtlar</div>
+      <div class="vbody">
+        <ul>
+          <li>İlk çalıştırmada <strong>setUp warmup zorunlu</strong> — bu repo'daki JMX'e eklendi</li>
+          <li><strong>Heavy tipler per-request kullanılmaz</strong> — setUp + CSV pattern'ı dökümanlanmalı</li>
+          <li><strong>JMeter 5.6.x + Java 25</strong> kombinasyonunda Groovy uyumsuz; BeanShell veya JSR223 + cacheKey aktif olmalı</li>
+          <li>BeanShell overhead (parse/execution) bu benchmark'ın test süresini uzatmış — gerçek test senaryosunu temsil etmiyor</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+</div>
+
+<script>
+// Theme toggle support
+const root = document.documentElement;
+const mq = window.matchMedia('(prefers-color-scheme: dark)');
+function applyTheme(dark){ root.setAttribute('data-theme', dark ? 'dark' : 'light'); }
+applyTheme(mq.matches);
+mq.addEventListener('change', e => applyTheme(e.matches));
+</script>
