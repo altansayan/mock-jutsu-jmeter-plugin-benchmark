@@ -16,9 +16,10 @@ while ($true) {
     $ramUsed  = $ramTotal - $ramFree
     $ramPct   = [math]::Round($ramUsed / $ramTotal * 100, 1)
 
-    $disk    = Get-CimInstance -ClassName Win32_PerfFormattedData_PerfDisk_PhysicalDisk |
+    $diskW   = 0
+    $disk    = Get-CimInstance -ClassName Win32_PerfFormattedData_PerfDisk_PhysicalDisk -ErrorAction SilentlyContinue |
                Where-Object { $_.Name -eq "_Total" }
-    $diskW   = [math]::Round($disk.DiskWriteBytesPersec / 1024, 1)
+    if ($disk) { $diskW = [math]::Round($disk.DiskWriteBytesPersec / 1024, 1) }
 
     "$ts,$cpu,$ramUsed,$ramTotal,$ramPct,$diskW" | Out-File $out -Append -Encoding utf8
     Write-Host "$ts  CPU:$cpu%  RAM:$ramUsed/$ramTotal MB ($ramPct%)  DiskW:$diskW KB/s"
