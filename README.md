@@ -10,6 +10,30 @@ Independent load test plans for the [mock-jutsu-jmeter](https://github.com/altan
 
 This repository exists for **transparency**: anyone can download these test plans, run them against their own JMeter installation, and independently verify the performance and correctness claims made in the plugin documentation.
 
+AllTypes-Wave.jmx — What Does It Answer?
+
+1. How long does each function take in a single call? (p50, p95, p99)
+2. What happens to performance under 1000 simultaneous calls? (true concurrent load)
+3. Are there lazy-init spikes? (does the first call show inflated times?)
+4. Does warmup help? (does the setUp warmup eliminate lazy-init spikes?)
+5. What is the gap between Fast and Heavy types? (0.05ms vs 12ms)
+6. Which types can be used per-request, and which should be pre-generated via CSV?
+
+---
+AllTypes-Burnin.jmx — What Does It Answer?
+
+1. Does performance degrade after 20 minutes of continuous load?
+2. Are there memory leaks? (does RAM grow over time without releasing?)
+3. Does GC pressure build up? (do sudden spikes appear over time?)
+4. Is TPS stable? (is the throughput at minute 1 the same at minute 20?)
+5. Do threads remain stable under sustained load?
+6. Can it be safely used in production load tests? (the core question)
+
+---
+Summary:
+- Wave → "How fast?"
+- Burn-in → "How durable?"
+
 ---
 
 ## Test Plans
