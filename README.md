@@ -10,7 +10,7 @@ Independent load test plans for the [mock-jutsu-jmeter](https://github.com/altan
 
 This repository exists for **transparency**: anyone can download these test plans, run them against their own JMeter installation, and independently verify the performance and correctness claims made in the plugin documentation.
 
-[AllTypes-Wave.jmx](https://github.com/altansayan/mock-jutsu-jmeter-plugin-benchmark/blob/main/test-plans/AllTypes-Wave.jmx) — What Does It Answer?
+[AllTypes-Wave.jmx](https://github.com/altansayan/mock-jutsu-jmeter-plugin-benchmark/blob/main/test-plans/AllTypes-Wave.jmx) — What Does It Answer? Ayrıca Detalı AllTypes-Wave Test Sonuçları İçin: Wave Detaylı Rapor 
 
 1. How long does each function take in a single call? (p50, p95, p99)
 2. What happens to performance under 1000 simultaneous calls? (true concurrent load)
@@ -20,7 +20,7 @@ This repository exists for **transparency**: anyone can download these test plan
 6. Which types can be used per-request, and which should be pre-generated via CSV?
 
 ---
-[AllTypes-Burnin.jmx](https://github.com/altansayan/mock-jutsu-jmeter-plugin-benchmark/blob/main/test-plans/AllTypes-Burnin.jmx) — What Does It Answer?
+[AllTypes-Burnin.jmx](https://github.com/altansayan/mock-jutsu-jmeter-plugin-benchmark/blob/main/test-plans/AllTypes-Burnin.jmx) — What Does It Answer? Ayrıca Detalı AllTypes-Wave Test Sonuçları İçin: Buring Detaylı Rapor 
 
 1. Does performance degrade after 20 minutes of continuous load?
 2. Are there memory leaks? (does RAM grow over time without releasing?)
